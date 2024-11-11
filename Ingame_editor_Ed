@@ -694,3 +694,110 @@ end)
 
 fishMacro.switch:setColor("white")
 fishMacro.switch:setFont('verdana-11px-rounded')
+
+local waitIfNotFound = false -- esperar si amigo no esta en pantalla 
+local onlyParty = true -- solo espera quien esta en party
+-- STORAGE
+storage.waitFriends = storage.waitFriends or {dist = 5, text = ""}
+local config = storage.waitFriends
+local friends = {}
+-- PARSE FRIENDS TEXT TO TABLE
+local function parseFriendList()
+  friends = {}
+  for _, friend in pairs(config.text:split("\n")) do
+    table.insert(friends,friend)
+  end
+end
+parseFriendList()
+
+-- MACRO
+local paused = false
+macro(250,"Esperar Amigos",function()
+  local p = pos()
+  for f, friend in pairs(friends) do
+    local find = getCreatureByName(friend)
+    if (not find and waitIfNotFound) or (find and (not onlyParty or find:getShield() > 2) and getDistanceBetween(p,find:getPosition()) > config.dist) then
+      if not paused then
+        paused = true
+        delay(1000) -- tempo que vai ficar parado até começar a andar pros lados
+        return CaveBot.setOff()
+      else
+        local wait = 0
+        local step = 250 -- intervalo de cada passo
+        for i = 0, 3 do
+          schedule(wait,function()
+            walk(i)
+            schedule(wait+step,function()
+              walk((i + 2) % 4)
+            end)
+          end)
+          wait = wait + step + step
+        end
+        wait = wait + step
+        delay(wait)
+        return
+      end
+    end
+  end
+  if paused then
+    paused = false
+    CaveBot.setOn()
+  end
+end)
+
+-- UI
+UI.Label("Distance:")
+addTextEdit("wfDist", config.dist, function(widget, text)
+  config.dist = tonumber(text)
+end)
+UI.Button("Editar List Amigos", function(newText)
+  UI.MultilineEditorWindow(config.text or "", {title="Wait Friends List", description="Insert 1 friend in each line"},
+  function(text)
+    config.text = text
+    parseFriendList()
+  end)
+end)
+
+-- macro para ignorar ciertos IDs del mapa By F.Almeida
+local replace_id = 2110
+local mark_color = "red"
+if not storage.avoid_items or type(storage.avoid_items) ~= "table" then
+  storage.avoid_items = {2147,2145,2148,2146}
+end
+
+local avoidMacro = macro(10*60*1000,"Evitar Trampas o Ids",function()
+end)
+
+local function parseItems(items)
+  local parse = {}
+  for e, entry in pairs(items) do
+    local id = type(entry) == 'table' and entry.id or entry
+    table.insert(parse,id)
+  end
+  return parse
+end
+
+local avoidContainer = UI.Container(function(widget, items)
+  storage.avoid_items = parseItems(items)
+end, true)
+avoidContainer:setHeight(35)
+avoidContainer:setItems(parseItems(storage.avoid_items))
+
+onAddThing(function(tile, thing)
+  if not avoidMacro:isOn() then return end
+  if thing:isItem() then
+    if not isOnTile(replace_id,tile) then
+      local oldId = thing:getId()
+      if table.find(storage.avoid_items,oldId) then
+        local item = thing
+        if thing:isGround() then
+          local create = Item.create()
+          tile:addThing(create,1)
+          item = create
+        end
+        item:setId(replace_id)
+        item:setMarked(mark_color)
+      end
+    end
+  end
+end)
