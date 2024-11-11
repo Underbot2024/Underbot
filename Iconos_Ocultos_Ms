@@ -1,0 +1,2787 @@
+--- Antipk
+local idRune = 3155
+local multiTargetSpell = 'exevo gran mas vis'
+local distance = 4
+local amountOfMonsters = 3
+
+local antipked = macro(1300,function()
+local isSafe = true
+local specAmount = 0
+
+if not g_game.isAttacking() then
+    return
+end
+
+for i,mob in ipairs(getSpectators()) do
+    if (getDistanceBetween(player:getPosition(), mob:getPosition()) <= distance and mob:isMonster()) then
+        specAmount = specAmount + 1
+    end
+    if (mob:isPlayer() and (player:getName() ~= mob:getName()) and g_game.isAttacking(storage.Spell1)) then
+        isSafe = false
+    end
+end
+
+if (specAmount >= amountOfMonsters) and isSafe then
+    say(multiTargetSpell)
+else
+    local attackingCreature = g_game.getAttackingCreature()
+    if attackingCreature then
+        g_game.useInventoryItemWith(idRune, attackingCreature)
+    end
+end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local antipkedIcon = addIcon("antipk", {item = 9056, text = "Antipk", switchable = true, moveable = true}, function(icon, isOn)
+  antipked.setOn(isOn)
+end)
+
+antipkedIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(antipkedIcon, 'antipked', storage.antipked or {})
+
+-- Antipush panel
+local ui = setupUI([[
+Panel
+  height: 19
+
+  BotSwitch
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-align: center
+    width: 130
+    !text: tr('Anti-Push Dejar On')
+
+  Button
+    id: edit
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    height: 17
+    text: Edit
+]])
+
+local edit = setupUI([[
+Panel
+  height: 90
+    
+  Label
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    text-align: center
+    text: Stack Items:
+
+  BotContainer
+    id: pushItems
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 65
+]])
+edit:hide()
+
+if not storage.antiPush then
+    storage.antiPush = {
+      enabled = false,
+      pushItems = { 3031, 3447, 3492 },
+    }
+end
+
+local config = storage.antiPush
+
+local showEdit = false
+ui.edit.onClick = function(widget)
+  showEdit = not showEdit
+  if showEdit then
+    edit:show()
+  else
+    edit:hide()
+  end
+end
+
+ui.title:setOn(config.enabled)
+ui.title.onClick = function(widget)
+  config.enabled = not config.enabled
+  ui.title:setOn(config.enabled)
+  antiPushIcon:setOn(config.enabled) -- Sincroniza el ícono con el estado del BotSwitch
+end
+
+UI.Container(function()
+    config.pushItems = edit.pushItems:getItems()
+end, true, nil, edit.pushItems) 
+edit.pushItems:setItems(config.pushItems)
+
+local antiPusho = macro(500, function()
+  if not config.enabled then return end
+
+  local pos = player:getPosition()
+  local tile = g_map.getTile(pos)
+
+  if #tile:getItems() > 7 then return true end
+
+  local topItem = tile:getTopUseThing():getId()
+
+  for i, item in pairs(config.pushItems) do
+    local drop = findItem(item.id)
+    if drop and item.id ~= topItem then
+      return g_game.move(drop,pos,math.random(1, 2))
+    end
+  end
+end)
+
+-- creando icono
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local antiPushoIcon = addIcon("antipusho", {item = 10818, text = "Anti Push", switchable = true, moveable = true}, function(icon, isOn)
+  antiPusho.setOn(isOn)
+end)
+
+antiPushoIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(antiPushoIcon, 'antiPusho', storage.antiPusho or {})
+
+-- Bugmap Modificado 
+local bugMapMobile = {};
+
+local cursorWidget = g_ui.getRootWidget():recursiveGetChildById('pointer');
+
+local initialPos = { x = cursorWidget:getPosition().x / cursorWidget:getWidth(), y = cursorWidget:getPosition().y / cursorWidget:getHeight() };
+
+local availableKeys = {
+    ['Up'] = { 2, -3 },
+    ['Down'] = { 2, 3 },
+    ['Left'] = { -3, 2 },
+    ['Right'] = { 3, 2 }
+};
+
+function bugMapMobile.logic()
+    local pos = pos();
+    local keypadPos = { x = cursorWidget:getPosition().x / cursorWidget:getWidth(), y = cursorWidget:getPosition().y / cursorWidget:getHeight() };
+    local diffPos = { x = initialPos.x - keypadPos.x, y = initialPos.y - keypadPos.y };
+
+    if (diffPos.y < 0.46 and diffPos.y > -0.46) then
+        if (diffPos.x > 0) then
+            pos.x = pos.x + availableKeys['Left'][1];
+        elseif (diffPos.x < 0) then
+            pos.x = pos.x + availableKeys['Right'][1];
+        else return end
+    elseif (diffPos.x < 0.46 and diffPos.x > -0.46) then
+        if (diffPos.y > 0) then
+            pos.y = pos.y + availableKeys['Up'][2];
+        elseif (diffPos.y < 0) then
+            pos.y = pos.y + availableKeys['Down'][2];
+        else return; end
+    end
+    local tile = g_map.getTile(pos);
+    if (not tile) then return; end
+
+    g_game.use(tile:getTopUseThing());
+end
+
+local bugmapMacro = macro(100,bugMapMobile.logic)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local bugmapIcon = addIcon("bugmap", {item = 3553, text = "BugMap", switchable = true, moveable = true}, function(icon, isOn)
+  bugmapMacro.setOn(isOn)
+end)
+
+bugmapIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(bugmapIcon, 'bugmap', storage.bugmap or {})
+
+-- Cavetarget
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors() 
+  icon:move(position.posX or 20, position.posY or 20)
+  
+  local dobleclick = false
+  icon.onDoubleClick = function ()
+    dobleclick = true
+    schedule(1500, function ()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") and not g_keyboard.isCtrlPressed() then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+  
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(parentRect.x, mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(parentRect.y - widget:getParent():getMarginTop(), mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+  
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = {posX = icon.moving.x, posY = icon.moving.y}
+  end
+end
+
+local cIcon = addIcon("cI",{text="Cave\nBot",switchable=false,moveable=true}, function()
+    if CaveBot.isOff() then 
+      CaveBot.setOn()
+    else 
+      CaveBot.setOff()
+    end
+end)
+cIcon:setSize({height=30,width=50})
+cIcon.text:setFont('verdana-11px-rounded')
+activeDrag(cIcon, 'cI', storage.cI or {})
+
+local tIcon = addIcon("tI",{text="Target\nBot",switchable=false,moveable=true}, function()
+    if TargetBot.isOff() then 
+      TargetBot.setOn()
+    else 
+      TargetBot.setOff()
+    end
+end)
+tIcon:setSize({height=30,width=50})
+tIcon.text:setFont('verdana-11px-rounded')
+activeDrag(tIcon, 'tI', storage.tI or {})
+
+macro(50,function()
+    if CaveBot.isOn() then
+      cIcon.text:setColoredText({"CaveBot\n","white","ON","green"})
+    else
+      cIcon.text:setColoredText({"CaveBot\n","white","OFF","red"})
+    end
+    if TargetBot.isOn() then
+      tIcon.text:setColoredText({"Target\n","white","ON","green"})
+    else
+      tIcon.text:setColoredText({"Target\n","white","OFF","red"})
+    end
+end)
+
+-- Exana
+local exanaMacro = macro(2500, function ()
+
+  if isPoisioned() then
+      say("exana pox")
+  end
+  if isBleeding() then
+      say("exana kor")
+ end
+ if isBurning() then
+      say("exana flam")
+ end
+  if isCursed() then
+      say("exana morta")
+  end
+  if isEnergized() then
+      say("exana vis")
+  end
+  return "retry"
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local exanaIcon = addIcon("exana", {item = 11468, text = "Exana", switchable = true, moveable = true}, function(icon, isOn)
+  exanaMacro.setOn(isOn)
+end)
+
+exanaIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(exanaIcon, 'exana', storage.exana or {})
+
+-- Auto Suelta Flores o Parcels
+local itemIds = {140,2988,2985,2984,2983,2982,2981,3504}
+local absolutePositions = {}
+local relativePositions = {"south", "north", "west", "east", "southeast", "northwest", "southwest", "northeast"}
+-- END CONFIG
+
+--[[
+Example Config:
+local itemIds = {2983} or {2984,2985}
+local absolutePositions = {x=33233,y=32396,z=7} or {{x=33233,y=32396,z=7},{x=33237,y=32396,z=7}} or {}
+local relativePositions = {"south"} or {"south","southwest"} or {}
+
+posible relative positions: center, south, north, west, east, southeast, northeast, southwest & northeast.
+--]]
+
+local relative = {
+  center = {0,0},
+  south = {0,1},
+  north = {0,-1},
+  west = {-1,0},
+  east = {1,0},
+  southeast = {1,1},
+  northeast = {1,-1},
+  southwest = {-1,1},
+  northwest = {-1,-1},
+}
+
+local dropitem = macro(100,function()
+  if time and time > now then return end
+
+  local positions = {}
+
+  if type(absolutePositions) == "table" and absolutePositions[1] then
+    for _, p in pairs(absolutePositions) do
+      table.insert(positions,p)
+    end
+  end
+
+  if type(relativePositions) == "table" and relativePositions[1] then
+    for o, off in pairs(relativePositions) do
+      if relative[off:lower()] then
+        local p = pos()
+        local off = relative[off:lower()]
+        local pos = {x = p.x + off[1] , y = p.y + off[2] , z = p.z}
+        table.insert(positions,pos)
+      end
+    end
+  end
+
+  if not positions[1] then return true end
+  for p, pos in pairs(positions) do
+    local tile = g_map.getTile({x=pos.x,y=pos.y,z=pos.z})
+    if tile and tile:canShoot() and tile:isWalkable() then
+      local topUse = tile:getTopUseThing()
+      if topUse then
+        local topId = topUse:getId()
+        if not table.find(itemIds,topId) then
+          for i, item in pairs(itemIds) do
+            local dropItem = findItem(item)
+            if dropItem then
+              g_game.move(dropItem,pos,1)
+              local time = now + 500
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local dropitemIcon = addIcon("dropitem", {item = 2983, text = "Flores", switchable = true, moveable = true}, function(icon, isOn)
+  dropitem.setOn(isOn)
+end)
+
+dropitemIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(dropitemIcon, 'dropitem', storage.dropitem or {})
+
+-- Follow Target
+local follow = macro(100,function()
+   if g_game.isOnline() and g_game.isAttacking() then
+         g_game.setChaseMode(1)
+           end
+           end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local followIcon = addIcon("follow", {item = 3254, text = "Follow", switchable = true, moveable = true}, function(icon, isOn)
+  follow.setOn(isOn)
+end)
+
+followIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(followIcon, 'follow', storage.follow or {})
+
+-- Fuego
+local fields = {2121,2123,2124,2126} -- Coloque os ids dos fields
+local destroy_field = 3148
+
+local fuego = macro(1000,function()
+    local player_tile = g_map.getTile(player:getPosition())
+    if player_tile then
+        local sqm_id = player_tile:getTopUseThing()
+        if sqm_id then
+            local sqm_id_value = sqm_id:getId()
+            for _, campo_id in ipairs(fields) do
+                if sqm_id_value == campo_id then
+                    useWith(destroy_field, player)
+                    return
+                end
+            end
+        end
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local fuegoIcon = addIcon("fuego", {item = 11640, text = "Fuego", switchable = true, moveable = true}, function(icon, isOn)
+  fuego.setOn(isOn)
+end)
+
+fuegoIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(fuegoIcon, 'fuego', storage.fuego or {})
+
+--- Hold SD
+local sdMacro = macro(1100,function()
+    if g_game.isAttacking() then
+        usewith(3155, g_game.getAttackingCreature())
+        delay(1000)
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local sdIcon = addIcon("sd", {item = 11610, text = "SD", switchable = true, moveable = true}, function(icon, isOn)
+  sdMacro.setOn(isOn)
+end)
+
+sdIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(sdIcon, 'sd', storage.sd or {})
+
+--- Hold Target
+local holdtMacro = macro(1000,function()
+  if g_game.isAttacking() then
+    oldTarget = g_game.getAttackingCreature()
+  end
+  if oldTarget and oldTarget:getPosition() then
+    if not g_game.isAttacking() and getDistanceBetween(pos(), oldTarget:getPosition()) <= 8 then
+      if oldTarget:getPosition().z == posz() then
+        g_game.attack(oldTarget)
+      end
+    end
+  end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local holdtIcon = addIcon("holdt", {item = 651, text = "Hold Target", switchable = true, moveable = true}, function(icon, isOn)
+  holdtMacro.setOn(isOn)
+end)
+
+holdtIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(holdtIcon, 'holdt', storage.holdt or {})
+
+-- Mapa.mobible
+local minimapWindow = modules.game_minimap.minimapWindow
+local rootWidget = g_ui.getRootWidget()
+local lastPos = {x = 599, y = 30}
+local tam = math.floor(rootWidget:getRect().height/3.0)
+local miniMapIcon = addIcon("toggleMiniMap", {item=10011, text="MAPA"}, function(icon, isOn)
+    if isOn then
+        minimapWindow:setParent(modules.game_interface.getRootPanel())
+        minimapWindow:show()
+        minimapWindow:move(lastPos.x, lastPos.y)
+        minimapWindow:resize(tam, tam)
+    else
+        minimapWindow:setParent(modules.game_interface.getRightPanel())
+        minimapWindow:hide()
+        minimapWindow:resize(32, 50)
+        minimapWindow:setMarginLeft(0)
+    end
+end)
+
+local copyOnDrag = minimapWindow.onDragLeave
+
+minimapWindow.onDragLeave = function(widget, droppedWidget, mousePos)
+    copyOnDrag(widget, droppedWidget, mousePos)
+    lastPos = {x = minimapWindow:getX(), y = minimapWindow:getY()}
+end
+
+rootWidget.onGeometryChange[7] = function(widget)
+    if minimapWindow:isHidden() then return end
+    tam = math.floor(rootWidget:getRect().height/1.8)
+    minimapWindow:resize(tam, tam)
+end
+
+
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+miniMapIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(miniMapIcon, 'toggleMiniMap', storage.toggleMiniMap or {})
+
+-- Move wall
+local exhausted = 1000
+local mwID = 3180
+
+local attack
+local movewallMacro = macro(10, "Target Move & Wall", function() 
+    attack = g_game.getAttackingCreature()
+end)
+
+local lastMW = 0
+onCreaturePositionChange(function(creature, newPos, oldPos)
+  if movewallMacro:isOff() or not attack or creature ~= attack or not oldPos or now - lastMW < exhausted  then return end
+  local mwallTile = g_map.getTile(oldPos)
+  useWith(mwID, mwallTile:getTopUseThing())
+lastMW = now
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local movewallIcon = addIcon("movewall", {item = 9379, text = "Move Wall", switchable = true, moveable = true}, function(icon, isOn)
+  movewallMacro.setOn(isOn)
+end)
+
+movewallIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(movewallIcon, 'movewall', storage.movewall or {})
+
+-- Mwall target
+itemWidget = [[
+Panel
+  height: 34
+  margin-top: 7
+  margin-left: 25
+  margin-right: 25
+
+  UIWidget
+    id: text
+    anchors.left: parent.left
+    anchors.verticalCenter: next.verticalCenter
+
+  BotItem
+    id: item
+    anchors.top: parent.top
+    anchors.right: parent.right
+]]
+
+storage.itemValues = storage.itemValues or {};
+addItem = function(id, title, defaultItem, dest, tooltip)
+    local widget = setupUI(itemWidget, dest)
+    widget.text:setText(title)
+    widget.text:setTooltip(tooltip)
+    widget.item:setTooltip(tooltip)
+    widget.item:setItemId(storage.itemValues[id] or defaultItem)
+    widget.item.onItemChange = function(widget)
+        storage.itemValues[id] = widget:getItemId()
+    end
+    storage.itemValues[id] = storage.itemValues[id] or defaultItem
+end
+
+addItem('mwallId', 'MW ID' , 3180, ToolsTab, '');
+
+local offsetDirections = {
+    [North] = { 0, -2 },
+    [East] = { 2, 0 },
+    [South] = { 0, 2 },
+    [West] = { -2, 0 },
+    [NorthEast] = { 2, -2 },
+    [SouthEast] = { 2, 2 },
+    [SouthWest] = { -2, 2 },
+    [NorthWest] = { -2, -2 }
+}
+
+
+local twallMacro = macro(10, "Mwall Frente Target", function()
+    local target = g_game.getAttackingCreature()
+    if not target then
+        return
+    end
+
+    local targetPos = target:getPosition()
+    local targetDir = target:getDirection()
+
+    targetPos.x = targetPos.x + offsetDirections[targetDir][1]
+    targetPos.y = targetPos.y + offsetDirections[targetDir][2]
+    
+    local mwallTile = g_map.getTile(targetPos)
+    useWith(storage.itemValues.mwallId, mwallTile:getTopUseThing())
+end, ToolsTab)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local twallIcon = addIcon("twall", {item = 8650, text = "Wall Target", switchable = true, moveable = true}, function(icon, isOn)
+  twallMacro.setOn(isOn)
+end)
+
+twallIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(twallIcon, 'twall', storage.twall or {})
+
+-- Mwall back
+local mwbackMacro = macro(10,function() end)
+
+onPlayerPositionChange(function(newPos, oldPos)
+    if oldPos.z ~= posz() then return end
+    if oldPos then
+        local tile = g_map.getTile(oldPos)
+        if mwbackMacro.isOn() and tile:isWalkable() then
+            useWith(3180, tile:getTopUseThing())
+        end
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local mwbackIcon = addIcon("mwback", {item = 11612, text = "Back Mwall", switchable = true, moveable = true}, function(icon, isOn)
+  mwbackMacro.setOn(isOn)
+end)
+
+mwbackIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(mwbackIcon, 'mwback', storage.mwback or {})
+
+-- Esconder pisos superiores
+onPlayerPositionChange(function(pos)
+    if storage.limitFloor then
+        local gameMapPanel = modules.game_interface.getMapPanel()
+        if gameMapPanel then gameMapPanel:lockVisibleFloor(pos.z) end
+    end
+end)
+
+local function toggleLimitFloor()
+    storage.limitFloor = not storage.limitFloor
+    local gameMapPanel = modules.game_interface.getMapPanel()
+    if gameMapPanel then
+        if storage.limitFloor then
+            gameMapPanel:lockVisibleFloor(posz())
+        else
+            gameMapPanel:unlockVisibleFloor()
+        end
+    end
+end
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+-- Anadir icono
+local ocultarTechosIcon = addIcon("ocultarTechos", {item = 9035, text = "Techos"}, toggleLimitFloor)
+
+ocultarTechosIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(ocultarTechosIcon, 'ocultarTechosIcon', storage.ocultarTechosIcon or {})
+
+--- ParaMax 
+local paramaxMacro = macro(100,function()
+    if g_game.isAttacking() then
+        usewith(3165, g_game.getAttackingCreature())
+        delay(100)
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local paramaxIcon = addIcon("paramax", {item = 11630, text = "Para Max", switchable = true, moveable = true}, function(icon, isOn)
+  paramaxMacro.setOn(isOn)
+end)
+
+paramaxIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(paramaxIcon, 'paramax', storage.paramax or {})
+
+-- Pickup
+local ui = setupUI([[
+Panel
+  height: 19
+
+  BotSwitch
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-align: center
+    width: 140
+    !text: tr('Free Items / Bag Loot')
+
+  Button
+    id: edit
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    height: 17
+    text: Edit
+]])
+
+local edit = setupUI([[
+Panel
+  height: 255
+
+  Label
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 5
+    text-align: center
+    width: 120
+    text: Max Distance:
+    height: 17
+
+  SpinBox
+    id: maxPos
+    height: 17
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    minimum: 1
+    maximum: 5
+    step: 1
+    editable: true
+    text-align: center
+
+  Label
+    anchors.top: prev.bottom
+    margin-top: 5
+    anchors.left: parent.left
+    margin-top: 5
+    text-align: center
+    width: 120
+    text: Min Capacity:
+    height: 17
+
+  BotTextEdit
+    id: minCap
+    height: 17
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    editable: true
+    text-align: center
+    text: 0.1
+
+  Label
+    anchors.top: prev.bottom
+    margin-top: 5
+    anchors.left: parent.left
+    margin-top: 5
+    text-align: center
+    width: 120
+    text: Move Delay:
+    height: 17
+
+  BotTextEdit
+    id: moveDelay
+    height: 17
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    editable: true
+    text-align: center
+    text: 0.1
+    
+  Label
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    text-align: center
+    text: Items to Pick Up:
+
+  BotContainer
+    id: freeItems
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 35
+
+  Label
+    anchors.top: prev.bottom
+    margin-top: 5
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-align: center
+    text: Containers to Fill:
+
+  BotContainer
+    id: freeContainers
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 35
+
+  BotSwitch
+    id: moveBag
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 17
+    text: Move Bag Loot
+    tooltip: Auto move container to your feet    
+  
+  BotSwitch
+    id: openNext
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 17
+    text: Open Next Container
+    tooltip: Auto open next container if container is full
+
+  BotSwitch
+    id: reopen
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 17
+    text: ReOpen Container
+    tooltip: Auto re-open container if its not opened yet
+
+  BotSwitch
+    id: moveTrash
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 17
+    text: Throw Trash Away
+    tooltip: Auto move trash away to continue looting
+
+  BotSwitch
+    id: moveOne
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 17
+    text: Slow Move Items
+    tooltip: Turn it on if you are having problems with the moving speed
+]])
+edit:hide()
+
+if not storage.freeLoot then
+    storage.freeLoot = {
+      enabled = false,
+      maxPos = 1,
+      minCap = "0.1",
+      moveDelay = "300",
+      openNext = true,
+      moveBag = true,
+      moveTrash = true,
+      moveOne = false,
+      reopen = true,
+      freeItems = { 3031, 3035, 3043 },
+      freeContainers = {}
+    }
+end
+
+local config = storage.freeLoot
+config.moveDelay = config.moveDelay or "300"
+
+local showEdit = false
+ui.edit.onClick = function(widget)
+  showEdit = not showEdit
+  if showEdit then
+    edit:show()
+  else
+    edit:hide()
+  end
+end
+
+ui.title:setOn(config.enabled)
+ui.title.onClick = function(widget)
+  config.enabled = not config.enabled
+  ui.title:setOn(config.enabled)
+end
+
+edit.openNext:setOn(config.openNext)
+edit.openNext.onClick = function(widget)
+  config.openNext = not config.openNext
+  edit.openNext:setOn(config.openNext)
+end
+
+edit.reopen:setOn(config.reopen)
+edit.reopen.onClick = function(widget)
+  config.reopen = not config.reopen
+  edit.reopen:setOn(config.reopen)
+end
+
+edit.moveBag:setOn(config.moveBag)
+edit.moveBag.onClick = function(widget)
+  config.moveBag = not config.moveBag
+  edit.moveBag:setOn(config.moveBag)
+end
+
+edit.moveTrash:setOn(config.moveTrash)
+edit.moveTrash.onClick = function(widget)
+  config.moveTrash = not config.moveTrash
+  edit.moveTrash:setOn(config.moveTrash)
+end
+
+edit.moveOne:setOn(config.moveOne)
+edit.moveOne.onClick = function(widget)
+  config.moveOne = not config.moveOne
+  edit.moveOne:setOn(config.moveOne)
+end
+
+edit.maxPos:setValue(config.maxPos)
+edit.maxPos.onValueChange = function(widget, value)
+  config.maxPos = value
+end
+
+edit.minCap:setText(config.minCap)
+edit.minCap.onTextChange = function(widget, text)
+  config.minCap = text
+end
+
+edit.moveDelay:setText(config.moveDelay)
+edit.moveDelay.onTextChange = function(widget, text)
+  config.moveDelay = text
+end
+
+local function properTable(t)
+  local r = {}
+  if #t == 0 then return r end
+  for _, entry in pairs(t) do
+    if type(entry) == 'number' then
+      table.insert(r, entry)
+    else
+      table.insert(r, entry.id)
+    end
+  end
+  return r
+end
+
+UI.Container(function()
+  config.freeItems = properTable(edit.freeItems:getItems())
+end, true, nil, edit.freeItems) 
+edit.freeItems:setItems(config.freeItems)
+config.freeItems = properTable(edit.freeItems:getItems())
+
+UI.Container(function()
+  config.freeContainers = properTable(edit.freeContainers:getItems())
+end, true, nil, edit.freeContainers) 
+edit.freeContainers:setItems(config.freeContainers)
+config.freeContainers = properTable(edit.freeContainers:getItems())
+
+local delay = now
+
+-- check destination and reopen container
+-- "open next container" "auto reopen"
+local dest = nil
+macro(100,function()
+  if not config.enabled or dest or delay > now then return end
+
+  if #config.freeContainers < 1 then
+    warn("[FreeItems]: You must set up\ncontainers to pick up items.")
+    delay = now + 5000
+    return
+  end
+
+  -- search for a destination in opened containers
+  local containers = g_game.getContainers()
+  for _, cont in pairs(containers) do
+    local cName = cont:getName():lower()
+    if table.find(config.freeContainers, cont:getContainerItem():getId()) then
+      if cont:getCapacity() > #cont:getItems() then
+        dest = cont
+        return
+        -- container is full, open next?
+      elseif config.openNext then
+        for i, item in pairs(cont:getItems()) do
+          if item:isContainer() and (not config.freeContainers[1] or table.contains(config.freeContainers, item:getId())) then 
+            g_game.open(item, cont)
+            -- delay = now + exhausted
+            return
+          end
+        end
+      end
+    end
+  end
+
+  -- no destination yet? should look on ground?
+  if not dest and config.reopen and config.freeContainers[1] then 
+    local tile = g_map.getTile(player:getPosition())
+    if tile then 
+      local things = tile:getThings()
+      for t, thing in pairs(things) do
+        if table.find(config.freeContainers,thing:getId()) then
+          delay = now + tonumber(config.moveDelay)
+          g_game.open(thing)
+          return
+        end
+      end
+    end
+  end
+  
+end)
+
+-- main function
+macro(50, function()
+  if not config.enabled or delay > now or TargetBot.isActive() then return end
+  local exhausted = tonumber(config.moveDelay)
+
+  -- check capacity
+  if freecap() < tonumber(config.minCap) then return end
+
+  -- wait for destination
+  if not dest then return end
+
+  -- ok, lets check around
+  for x = -config.maxPos, config.maxPos do
+    for y = -config.maxPos, config.maxPos do
+      local pos = player:getPosition()
+      local tile = g_map.getTile({x = pos.x + x, y = pos.y + y, z = pos.z})
+      if tile and (x ~= 0 or y ~= 0) then
+        local things = tile:getThings()
+        for _, item in ipairs(things) do
+          if not item:isNotMoveable() and not item:isCreature() then
+            if table.find(config.freeItems, item:getId()) then
+              local cap = dest:getCapacity()
+              g_game.move(item,dest:getSlotPosition(cap),item:getCount())
+              -- dest is full (or almost), lets break and search for another one
+              if #dest:getItems() >= (cap-1) then dest = nil return end
+              -- Move One Item per time
+              delay = now + exhausted
+              if config.moveOne then return end
+            elseif table.find(config.freeContainers,item:getId()) then
+              -- this container should be in your feet ^.- just break and wait
+              delay = now + exhausted
+              return
+              --move trash?
+            elseif config.moveTrash and (math.abs(x) == 1 or math.abs(y) == 1) then
+              local trashTile = nil
+              local d = item:isStackable() and 4 or 2
+              for xp = -d,d do
+                for yp = -d,d do
+                  if math.abs(yp) > 1 or math.abs(xp) > 1 then
+                    trashTile = g_map.getTile({x = pos.x + xp, y = pos.y + yp, z = pos.z})
+                    if trashTile and not trashTile:isHouseTile() and trashTile:isWalkable() then
+                      local trashPos = trashTile:getPosition()
+                      local tilePos = tile:getPosition()
+                      if findPath(trashPos,tilePos, 7, { ignoreNonPathable = true, precision = 1 }) and g_map.isSightClear(tilePos,trashPos) then
+                        return g_game.move(item,trashPos,item:getCount())
+                      end
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end)
+
+-- for compat
+local function getNear(pos)
+  if type(pos) ~= "table" then pos = pos:getPosition() end
+
+  local tiles = {}
+  local dirs = {
+      {-1, 1}, {0, 1}, {1, 1}, {-1, 0}, {1, 0}, {-1, -1}, {0, -1}, {1, -1}
+  }
+  for i = 1, #dirs do
+      local tile = g_map.getTile({
+          x = pos.x - dirs[i][1],
+          y = pos.y - dirs[i][2],
+          z = pos.z
+      })
+      if tile then table.insert(tiles, tile) end
+  end
+
+  return tiles
+end
+
+-- auto move container on ground
+onPlayerPositionChange(function(newPos, oldPos)
+  if not config.enabled then return true end
+  dest = nil
+  if not config.moveBag then return true end
+
+  local max = config.maxPos
+  local tiles = getNear(newPos)
+
+  for t, tile in pairs(tiles) do
+    if tile then
+      local items = tile:getItems()
+      for i, item in pairs(items) do
+        if table.find(config.freeContainers,item:getId()) then
+          g_game.move(item,newPos)
+          return true
+        end
+      end
+    end
+  end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local pickupIcon = addIcon("recoger" ,{item=2478, text="Pickup" , switchable=true},function(w, isOn)
+ config.enabled = isOn
+ ui.title:setOn(config.enabled)
+end)
+
+pickupIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(pickupIcon, 'pickup', storage.pickup or {})
+
+-- Pushfinal
+-- DESTROY FIELD
+local destroy = {
+  id = 3148,
+  fields = {2118, 2122, 105, 2123, 2124, 2121, 2126, 2119},
+  icon_pos = {275,330},
+  text = "Destroy",
+}
+-- MAGIC WALL
+local mw = {
+  id = 3180,
+  icon_pos = {325,330},
+  text = "Push Mwall"
+}
+-- FIRE FIELD // main icon
+local ff = {
+  id = 8646,
+  text = "Push Player",
+}
+-- throw rune delay
+local ex = 250
+-- END CONFIG
+
+
+-- destroy
+local destroyMacro = macro(500,function() end)
+local destroyIcon = addIcon("destroyIcon",{movable=true, text=destroy.text, item=destroy.id}, destroyMacro)
+
+destroyIcon.onDragEnter = function(widget, mousePos)
+  if not g_keyboard.isKeyPressed("F1") then
+	return false
+  end
+  widget:breakAnchors()
+  widget.movingReference = { x = mousePos.x - widget:getX(), y = mousePos.y - widget:getY() }
+  return true
+ end
+
+destroyIcon.text:setFont('verdana-11px-rounded')
+-- mw
+local mwMacro = macro(700,function() end)
+local mwIcon = addIcon("mwIcon",{movable=true, text=mw.text, item=mw.id}, mwMacro)
+
+mwIcon.onDragEnter = function(widget, mousePos)
+  if not g_keyboard.isKeyPressed("F1") then
+	return false
+  end
+  widget:breakAnchors()
+  widget.movingReference = { x = mousePos.x - widget:getX(), y = mousePos.y - widget:getY() }
+  return true
+ end
+
+mwIcon.text:setFont('verdana-11px-rounded')
+
+-- push settings
+
+-- Storage
+local stName = "PushIcons"
+storage[stName] = storage[stName] or {
+  sEx = 700,
+  sIPX = 170,
+  sIPY = 250,
+  sRune = 3172
+}
+
+local config = storage[stName]
+
+-- UI
+local main = setupUI([[
+Panel
+  height: 19
+
+  Button
+    id: edit
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-align: center
+    margin-top: 1
+    width: 176
+    height: 17
+    !text: tr('Push Target')
+    font: verdana-11px-rounded
+    color: red
+]])
+
+local edit = setupUI([[
+PushIconsBox < CheckBox
+  font: verdana-11px-rounded
+  margin-top: 5
+  margin-left: 5
+  anchors.top: prev.bottom
+  anchors.left: parent.left
+  anchors.right: parent.right
+  color: lightGray
+
+PushIconsText < BotTextEdit
+  width: 80
+  anchors.top: prev.bottom
+  anchors.right: parent.right
+  font: verdana-11px-rounded
+  margin-top: 5
+
+PushIconsLabel < Label
+  font: verdana-11px-rounded
+  anchors.left: parent.left
+  margin-left: 5
+  anchors.verticalCenter: prev.verticalCenter
+  
+Panel
+  height: 123
+
+  PushIconsText
+    id: sIPX
+    anchors.top: parent.top
+
+  PushIconsLabel
+    text: Icon Position X:
+
+  PushIconsText
+    id: sIPY
+
+  PushIconsLabel
+    text: Icon Position Y:
+
+  PushIconsText
+    id: sEx
+
+  PushIconsLabel
+    text: Push Delay:
+
+  PushIconsText
+    id: sRune
+
+  PushIconsLabel
+    text: Fire Field ID:
+]])
+edit:hide()
+
+-- UI Functions
+local showEdit = true
+main.edit.onClick = function()
+  showEdit = not showEdit
+  if showEdit then edit:show()
+  else edit:hide()
+  end
+end
+
+edit.sIPX:setText(config.sIPX)
+edit.sIPX.onTextChange = function(widget, text)
+  config.sIPX = text
+end
+edit.sIPX:setTooltip("Need Restart to Change.")
+
+edit.sIPY:setText(config.sIPY)
+edit.sIPY.onTextChange = function(widget, text)
+  config.sIPY = text
+end
+edit.sIPY:setTooltip("Need Restart to Change.")
+
+edit.sEx:setText(config.sEx)
+edit.sEx.onTextChange = function(widget, text)
+  config.sEx = text
+end
+
+edit.sRune:setText(config.sRune)
+edit.sRune.onTextChange = function(widget, text)
+  config.sRune = text
+end
+
+--- End of UI
+
+-- Base Icon Position
+local x,y = config.sIPX, config.sIPY
+-- Icon Config
+local iConf = {
+  step = 43, -- distance from each icon
+  itemOn = 8649,
+  itemOff = 8647,
+}
+
+-- Directions
+local offsetDirections = {
+  [North]      = {x =  0, y = -1, enabled = false, icon = nil},
+  [East]       = {x =  1, y =  0, enabled = false, icon = nil},
+  [South]      = {x =  0, y =  1, enabled = false, icon = nil},
+  [West]       = {x = -1, y =  0, enabled = false, icon = nil},
+  [NorthEast]  = {x =  1, y = -1, enabled = false, icon = nil},
+  [SouthEast]  = {x =  1, y =  1, enabled = false, icon = nil},
+  [SouthWest]  = {x = -1, y =  1, enabled = false, icon = nil},
+  [NorthWest]  = {x = -1, y = -1, enabled = false, icon = nil},
+}
+
+-- Positions Icons
+for e, entry in pairs(offsetDirections) do
+  entry.icon = addIcon("icon"..e,{item=iConf.itemOff, movable=false, text=""}, function(w,on)
+    w.item:setItemId(on and iConf.itemOn or iConf.itemOff)
+    for o, off in pairs(offsetDirections) do
+      if o ~= e then
+        if off.enabled then off.icon:onClick() end
+      end
+    end
+    entry.enabled = on
+  end)
+  
+  entry.icon:breakAnchors()
+  entry.icon:move(x+(entry.x * iConf.step), y+(entry.y * iConf.step))
+  entry.icon:hide()
+  entry.icon:setSize({height=iConf.step,width=iConf.step})
+end
+
+-- Main Loop
+local pushTarget = macro(50,function(m)
+  local target = nil
+  if g_game.isAttacking() then
+    target = g_game.getAttackingCreature()
+  elseif g_game.isFollowing() then
+    target = g_game.getFollowingCreature()
+  end
+  if not target then return end
+  for e, entry in pairs(offsetDirections) do
+    if entry.enabled then
+      local pos = target:getPosition()
+      local tile = g_map.getTile(pos)
+      if tile then
+        local top = tile:getTopUseThing()
+        if top and not top:isNotMoveable() then
+          useWith(config.sRune,top)
+          print("FF")
+          return delay(ex)
+        end
+      end
+      pos.x, pos.y = pos.x + entry.x, pos.y + entry.y
+      local newTile = g_map.getTile(pos)
+      if newTile then
+        if destroyMacro:isOn() then
+          for i, item in ipairs(newTile:getItems()) do
+            if table.find(destroy.fields,item:getId()) then
+              useWith(destroy.id,newTile:getTopThing())
+              print("DESTR")
+              return delay(ex)
+            end
+          end
+        end
+        if newTile:isWalkable() then
+          print("move?")
+          g_game.move(target,pos)
+          delay(config.sEx)
+          if mwMacro:isOn() then
+            schedule(config.sEx,function()
+              print("MW")
+              useWith(3180,tile:getTopUseThing())
+            end)
+            delay(config.sEx + ex)
+          end
+        end
+      end
+    end
+  end
+end)
+
+-- Central Icon
+local mainIcon = addIcon("MainIcon",{movable=true, text=ff.text, item=ff.id}, function(w, isOn)
+   for e, entry in pairs(offsetDirections) do
+      entry.icon:setVisible(isOn)
+    end
+    pushTarget.setOn(isOn)
+    destroyIcon:setVisible(isOn)
+    mwIcon:setVisible(isOn)
+end)
+mainIcon:move(225,385)
+
+mainIcon.onDragEnter = function(widget, mousePos)
+  if not g_keyboard.isKeyPressed("F1") then
+	return false
+  end
+  widget:breakAnchors()
+  widget.movingReference = { x = mousePos.x - widget:getX(), y = mousePos.y - widget:getY() }
+  return true
+ end
+
+mainIcon:setSize({height=iConf.step,width=iConf.step})
+mainIcon.text:setFont('verdana-11px-rounded')
+
+--- Push Items Debajo Dety
+gpPushEnabled = true
+gpPushDelay = 300 -- safe value: 300ms
+
+local pushiMacro = macro(300,function ()
+    if gpPushEnabled then
+        push(0, -1, 0)
+        push(0, 1, 0)
+        push(-1, -1, 0)
+        push(-1, 0, 0)
+        push(-1, 1, 0)
+        push(1, -1, 0)
+        push(1, 0, 0)
+        push(1, 1, 0)
+    end
+end)
+
+function push(x, y, z)
+    local position = player:getPosition()
+    position.x = position.x + x
+    position.y = position.y + y
+  
+    local tile = g_map.getTile(position)
+    local thing = tile:getTopThing()
+    if thing and thing:isItem() then
+      g_game.move(thing, player:getPosition(), thing:getCount())
+    end
+end
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local pushiIcon = addIcon("pushI", {item = 9392, text = "Pushi", switchable = true, moveable = true}, function(icon, isOn)
+  pushiMacro.setOn(isOn)
+end)
+
+pushiIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(pushiIcon, 'pushi', storage.pushi or {})
+
+--- Ropemax
+function distanceFromPlayer(position)
+    local playerPosition = g_game.getLocalPlayer():getPosition()
+    return math.max(math.abs(playerPosition.x - position.x), math.abs(playerPosition.y - position.y))
+end
+
+--[Use All]
+storage.shovel = 3457
+storage.rope = 3003
+storage.machete = 3308
+storage.scythe = 3453
+
+local useId = { 34847, 1764, 21051, 30823, 6264, 5282, 20453, 20454, 20474, 11708, 11705, 
+                6257, 6256, 2772, 27260, 2773, 1632, 1633, 1948, 435, 6252, 6253, 5007, 4911, 
+                1629, 1630, 5108, 5107, 5281, 1968, 435, 1948, 5542, 31116, 31120, 30742, 31115, 
+                31118, 20474, 5737, 5736, 5734, 5733, 31202, 31228, 31199, 31200, 33262, 30824, 
+                5125, 5126, 5116, 5117, 8257, 8258, 8255, 8256, 5120, 30777, 30776, 23873, 23877,
+                5736, 6264, 31262, 31130, 31129, 6250, 6249, 5122, 30049, 7131, 7132, 7727 }
+local shovelId = { 606, 593, 867, 608 }
+local ropeId = { 17238, 12202, 12935, 386, 421, 21966, 14238 }
+local macheteId = { 2130, 3696, 3702 }
+local scytheId = { 3653 }
+
+ropemax = macro(300,function()
+    for _, tile in pairs(g_map.getTiles(posz())) do
+        if distanceFromPlayer(tile:getPosition()) < 2 then
+            for _, item in pairs(tile:getItems()) do
+                -- use
+                if table.find(useId, item:getId()) then
+                    use(item)
+                    ropemax.setOn()
+                    return
+                elseif table.find(shovelId, item:getId()) then
+                    useWith(storage.shovel, item)
+                    ropemax.setOff()
+                    return
+                elseif table.find(ropeId, item:getId()) then
+                    useWith(storage.rope, item) 
+                    ropemax.setOff()
+                    return
+                elseif table.find(macheteId, item:getId()) then
+                    useWith(storage.machete, item)
+                    ropemax.setOff()
+                    return
+                elseif table.find(scytheId, item:getId()) then
+                    useWith(storage.scythe, item)
+                    ropemax.setOff()
+                    return
+                end
+            end
+        end
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local ropemaxIcon = addIcon("ropemax", {item = 9598, text = "USE", switchable = true, moveable = true}, function(icon, isOn)
+  ropemax.setOn(isOn)
+end)
+
+ropemaxIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(ropemaxIcon, 'ropemax', storage.ropemax or {})
+
+-- SellLoot
+if not storage.ItemsToSell or not storage.ItemsToSell.items then
+    storage.ItemsToSell = {
+        items = {
+
+        },
+        hide = true
+    }
+end
+
+local config = storage.ItemsToSell
+
+local ItemsToSellContainer
+
+UI.Button("Items To Sell", function ()
+    config.hide = not config.hide
+    ItemsToSellContainer:setVisible(config.hide)
+end)
+
+ItemsToSellContainer = UI.Container(function(widget, items)
+  config.items = table.collect(items, function (key, value)
+        return value.id
+  end)
+end, true)
+ItemsToSellContainer:setVisible(config.hide)
+ItemsToSellContainer:setItems(config.items)
+
+local npcWindow = modules.game_npctrade.npcWindow
+
+
+function sellLoot()
+    NPC.say("hi")
+    schedule(1000, function ()
+        NPC.say("trade")
+    end)
+
+    schedule(3000, function ()
+        if npcWindow:isHidden() then return end
+        for _, value in ipairs(ItemsToSellContainer:getItems()) do
+            NPC.sell(value.id, -1, true)
+        end
+        schedule(3000, function ()
+            NPC.closeTrade()
+        end)
+    end)
+end
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local selloIcon = addIcon("Selloot", {item = 5675, text= "Loot", switchable = false}, function (widget)
+   sellLoot()
+end)
+
+selloIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(selloIcon, 'sello', storage.sello or {})
+
+--- Stop Attack
+local stopattackMacro = macro(1,function()
+    g_game.cancelAttackAndFollow()
+    g_game.cancelAttackAndFollow()
+    g_game.cancelAttackAndFollow()
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local stopattackIcon = addIcon("stopattack", {item = 3423, text = "Stop Attack", switchable = true, moveable = true}, function(icon, isOn)
+  stopattackMacro.setOn(isOn)
+end)
+
+stopattackIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(stopattackIcon, 'stopattack', storage.stopattack or {})
+
+--- Last Target Exiva
+local target 
+onAttackingCreatureChange(function(creature, oldCreature)
+  if creature then
+    target = creature
+  end
+end)
+
+local lastexMacro = macro(2000, function()
+  if not target then return end
+  say('exiva "' .. target:getName())
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local lastexIcon = addIcon("exiva", {item = 1982, text = "Exiva Target", switchable = true, moveable = true}, function(icon, isOn)
+  lastexMacro.setOn(isOn)
+end)
+
+lastexIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(lastexIcon, 'lastex', storage.lastex or {})
+
+-- UE Exevo Gran Mas flam 
+local uenox = macro(1000,function()
+say("exevo gran mas flam") 
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local uenoxIcon = addIcon("uenox", {item = 8078, text = "UE", switchable = true, moveable = true}, function(icon, isOn)
+  uenox.setOn(isOn)
+end)
+
+uenoxIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(uenoxIcon, 'uenox', storage.uenox or {})
+
+-- Avalanche
+local aoe = macro(400,function()
+    if g_game.isAttacking() then
+        usewith(3161, g_game.getAttackingCreature())
+        delay(900)
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local aoeIcon = addIcon("aoe", {item = 11624, text = "AOE", switchable = true, moveable = true}, function(icon, isOn)
+ aoe.setOn(isOn)
+end)
+
+aoeIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(aoeIcon, 'aoe', storage.aoe or {})
+ 
+-- Dance girar
+local dance = macro(100,function()
+    turn(math.random(0,3))
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local danceIcon = addIcon("dance", {item = 3236, text = "Dance", switchable = true, moveable = true}, function(icon, isOn)
+  dance.setOn(isOn)
+end)
+
+danceIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(danceIcon, 'dance', storage.dance or {})
+
+--- Npc Talk
+local npcshop = macro(5000, function()
+  NPC.say("hi")
+  schedule(1000, function()
+    NPC.say("trade")
+    schedule(10000, function()
+    end)
+  end)
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local npcshopIcon = addIcon("npcshop", {item = 8149, text = "Npc Shop", switchable = true, moveable = true}, function(icon, isOn)
+  npcshop.setOn(isOn)
+end)
+
+npcshopIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(npcshopIcon, 'npcshop', storage.npcshop or {})
+
+-- Falcon
+local macroName = "Use Falcon"
+local items = {8175}
+local wait = 1 -- minutes
+
+local falcon = macro(1000,function()
+  local time = 0
+  for i=1,#items do
+    local id = items[i]
+    if findItem(id) then
+      schedule(time,function()
+        g_game.use(findItem(id))
+      end)
+      time = time + 250
+    end
+  end
+  delay((wait*1*1000))
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local falconIcon = addIcon("falcon", {item = 8175, text = "Falcon", switchable = true, moveable = true}, function(icon, isOn)
+  falcon.setOn(isOn)
+end)
+
+falconIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(falconIcon, 'falcon', storage.falcon or {})
+
+-- Mana
+local manaId = 238
+local manaPercent = 90
+
+local mananox = macro(50,function()
+  if (manapercent() <= manaPercent) then
+    usewith(manaId, player) 
+  end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local mananoxIcon = addIcon("mananox", {item = 238, text = "Mana", switchable = true, moveable = true}, function(icon, isOn)
+  mananox.setOn(isOn)
+end)
+
+mananoxIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(mananoxIcon, 'mananox', storage.mananox or {})
+
+-- HoldMw
+local hold = 0
+local candidates = {}
+local shouldHold = false
+
+local holdMwIcon = macro(200, function(m)
+  shouldHold = true
+  schedule(200, function()
+    if m.isOn() then return end
+    shouldHold = false
+    candidates = {}
+    for _, t in ipairs(g_map.getTiles(posz())) do
+      t:setText("")
+    end
+  end)
+end)
+
+local m = macro(20, function()
+    if #candidates == 0 then return end
+    for i, pos in pairs(candidates) do
+      local tile = g_map.getTile(pos)
+      if tile then
+        if tile:getText():len() == 0 then 
+          table.remove(candidates, i)
+        end
+        local rune = tile:getText() == "HOLD MW" and 3180 or tile:getText() == "HOLD WG" and 3156
+        if tile:canShoot() and not isInPz() and tile:isWalkable() and tile:getTopUseThing():getId() ~= 2130 then
+          if math.abs(player:getPosition().x-tile:getPosition().x) < 8 and math.abs(player:getPosition().y-tile:getPosition().y) < 6 then
+            rune = findItem(rune)            
+            return useWith(rune, tile:getTopUseThing())
+          end
+        end
+      end
+    end
+end)
+
+onRemoveThing(function(tile, thing)  
+    if thing:getId() ~= 2128 then return end
+    if tile:getText():find("HOLD") then
+        table.insert(candidates, tile:getPosition())
+        local rune = tile:getText() == "HOLD MW" and 3180 or tile:getText() == "HOLD WG" and 3156
+        if math.abs(player:getPosition().x-tile:getPosition().x) < 8 and math.abs(player:getPosition().y-tile:getPosition().y) < 6 then
+          print(rune)
+          rune = findItem(rune)  
+          return useWith(rune, tile:getTopUseThing())
+        end
+    end
+end)
+
+onAddThing(function(tile, thing)  
+    if m.isOff() then return end
+    if thing:getId() ~= 2128 then return end
+    if tile:getText():len() > 0 then
+        table.remove(candidates, table.find(candidates,tile))
+    end
+end)
+
+onUseWith(function(pos, itemId, target, subType)
+    if not shouldHold or (itemId ~= 3180 and itemId ~= 3156 ) then return end
+    
+    hold = now    
+    local tile = g_map.getTile(target:getPosition())
+    if not tile then return end
+
+    if itemId == 3180 then
+  
+        tile:setText("HOLD MW")
+    else
+        tile:setText("HOLD WG")
+    end
+    table.insert(candidates, tile:getPosition()) 
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local holdMwIcon = addIcon("holdMw", {item = 2128, text = "HoldMw", switchable = true, moveable = true}, function(icon, isOn)
+  holdMwIcon.setOn(isOn)
+end)
+
+holdMwIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(holdMwIcon, 'holdMwIcon', storage.holdMwIcon or {})
+
+-- Check great mana potion
+local countpot = addIcon("Check", {text="", item = 238}, 
+function(widget,isOn)
+   local id = 238
+   local contar = macro(1000,function()
+      local countItem = itemAmount(id)
+      widget.text:setText(countItem.."\n")
+      widget.text:setColor("green")
+   end)
+   contar:setOn()
+end)
+countpot:breakAnchors()
+countpot:move(330,52)
+
+-- Boton para tirar mwall
+
+local Mwall = addIcon("MagicWall", {item=3180, text="Magic Wall", movable=true, switchable = false}, function()
+
+  local item = Item.create(3180) 
+  if g_game.getClientVersion() < 860 then
+      local tmpItem = g_game.findPlayerItem(3180, -1) 
+      if not tmpItem then return true end
+      item = tmpItem
+  end
+  modules.game_interface.startUseWith(item, -1) 
+end)
+Mwall:move(100,40)
+
+Mwall.text:setFont('verdana-11px-rounded')
+
+Mwall.onDragEnter = function(widget, mousePos)
+  if not g_keyboard.isKeyPressed("F1") then
+	return false
+  end
+  widget:breakAnchors()
+  widget.movingReference = { x = mousePos.x - widget:getX(), y = mousePos.y - widget:getY() }
+  return true
+ end
