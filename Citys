@@ -3,7 +3,7 @@ setDefaultTab("City")
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
 macro(500, function()
-qw:setText("MAKUTZ GAY")
+qw:setText("Me Gustan los GAY")
 qw:setColor("pink")
 qw:setFont("verdana-11px-rounded")
 schedule(600, function()
