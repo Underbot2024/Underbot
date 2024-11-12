@@ -1,0 +1,38 @@
+UI.Label("Agrega Hasta 4 Labels Run1 a Run4 & Pz")
+ 
+local etiquetas = {
+    {nombre = "Run1", activo = false, ultimoCambio = 0},
+    {nombre = "Run2", activo = false, ultimoCambio = 0},
+    {nombre = "Run3", activo = false, ultimoCambio = 0},
+    {nombre = "Run4", activo = false, ultimoCambio = 0},
+    {nombre = "Pz", activo = false, ultimoCambio = 0}
+}
+
+local tiempoPorEtiqueta = 60000 -- 1 minuto
+local indiceActual = 1
+
+local function playersinScreen()
+    for _, spec in ipairs(getSpectators()) do
+        if spec ~= player and spec:isPlayer() then
+            return true
+        end
+    end
+    return false
+end
+
+macro(1000, "Ir a Run/Pz", function()
+    if playersinScreen() then
+        local etiquetaActual = etiquetas[indiceActual]
+        if not etiquetaActual.activo then
+            CaveBot.gotoLabel(etiquetaActual.nombre)
+            etiquetaActual.activo = true
+            etiquetaActual.ultimoCambio = now
+        elseif etiquetaActual.activo and now - etiquetaActual.ultimoCambio >= tiempoPorEtiqueta then
+            etiquetaActual.activo = false
+            indiceActual = indiceActual + 1
+            if indiceActual > #etiquetas then
+                indiceActual = 1
+            end
+        end
+    end
+end)
