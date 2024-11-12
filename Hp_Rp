@@ -1,4 +1,4 @@
-setDefaultTab("HEAL")
+setDefaultTab("HP")
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
 macro(500, function()
