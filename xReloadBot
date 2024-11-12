@@ -1,0 +1,5 @@
+-- Recarga Configuraciones bot
+modules.game_textmessage.displayGameMessage("Bot Cargado")
+addButton("reloadid", "Recargar Bot", function() 
+    reload()
+end)
