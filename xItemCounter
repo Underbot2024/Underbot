@@ -1,0 +1,340 @@
+setDefaultTab("Main")
+local panelName = "ItemCounter"
+if not storage[panelName] then
+    storage[panelName] = {}
+end
+local config = storage[panelName]
+
+g_ui.loadUIFromString([[
+
+ItemCounterItem < Panel
+  height: 40
+
+  BotItem
+    id: item
+    anchors.left: parent.left
+    anchors.top: parent.top
+  
+  UIWidget
+    id: text
+    margin-left:35
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    anchors.top: parent.top
+
+ItemCounterWindow < MainWindow
+  !text: tr('Items Counter')
+  size: 500 470
+  @onEscape: self:hide()
+
+  VerticalScrollBar
+    id: contentScroll
+    anchors.top: parent.top
+    margin-top: 3
+    anchors.right: parent.right
+    anchors.bottom: parent.top
+    step: 28
+    pixels-scroll: true
+    margin-top: 5
+    margin-bottom: 5
+
+  ScrollablePanel
+    id: content
+    anchors.top: prev.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: separator.top
+    vertical-scrollbar: contentScroll
+    margin-bottom: 10
+
+    Panel
+      id: panel1
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    Panel
+      id: panel2
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left:100
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    Panel
+      id: panel3
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left:200
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    Panel
+      id: panel4
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left:300
+      layout:
+        type: verticalBox
+        fit-children: true
+
+  HorizontalSeparator
+    id: separator
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8    
+
+  Button
+    id: closeButton
+    !text: tr('Close')
+    font: cipsoftFont
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+]])
+
+local rootWidget = g_ui.getRootWidget()
+local itemList = nil
+if rootWidget then
+    ItemCounterWindow = UI.createWindow('ItemCounterWindow', rootWidget)
+
+    ItemCounterWindow:hide()
+
+    ItemCounterWindow.onGeometryChange = function(widget, old, new)
+        if old.height == 0 then return end
+        config.height = new.height
+    end
+
+    addButton("","Item Counter", function()
+      ItemCounterWindow:show()
+      ItemCounterWindow:raise()
+      ItemCounterWindow:focus()
+    end):setColor("#03fcf4")
+    
+    local firstPage = 100
+    local lastPage = 50000
+    local pageSize = 50
+    local currentPage = firstPage
+
+    ItemCounterWindow.closeButton.onClick = function(widget)
+        ItemCounterWindow:hide()
+    end
+
+end
+
+local containerItemStack = {}
+local result = {}
+
+local printMessage = function(mens)
+  modules.game_textmessage.displayGameMessage(mens)
+end
+
+local addItemCount = function(id, title, defaultItem, dest)
+  local widget = UI.createWidget('ItemCounterItem', dest)
+  widget:setId(id.."ïtemId")
+  widget.text:setText(title)
+  widget.item:setItemId(defaultItem)
+end
+
+local dests = {
+  ItemCounterWindow.content.panel1,
+  ItemCounterWindow.content.panel2,
+  ItemCounterWindow.content.panel3,
+  ItemCounterWindow.content.panel4,
+}
+
+local destIndex = 0
+
+local getDest = function()
+  destIndex = destIndex + 1
+
+  if destIndex > 4 then
+    destIndex = 1
+  end
+  
+  return  dests[destIndex]
+end
+
+local closeAll = function()
+  for _, container in pairs(getContainers()) do
+    g_game.close(container)
+  end
+end
+
+local openBack = function()
+  if getBack() then 
+    g_game.open(getBack()) 
+  end
+end
+
+local getMainBPId = function()
+  return getBack():getId()
+end
+
+local isBackOpen = function()
+  for _, container in pairs(getContainers()) do
+    local cItem = container:getContainerItem()
+    if cItem:getId() == getMainBPId() then
+      return true
+    end
+  end
+  return false
+end
+
+local isBack = function(container)
+  return container:getContainerItem():getId() == getMainBPId()
+end
+
+local pushContainer = function(containerItem)
+   table.insert(containerItemStack, containerItem)
+end
+
+local popContainer = function()
+   table.remove(containerItemStack, 1)
+end
+
+local openNext = function()
+  local cItem = containerItemStack[1]
+  if cItem then
+    popContainer()
+    g_game.open(cItem)
+    schedule(250, function()
+      cItem.isChecked = true
+    end)
+    return true
+  else
+    return false
+  end
+end
+
+local closeCheckedContainers = function()
+  for _, container in pairs(getContainers()) do
+    if not isBack(container) then
+      local canClose = true
+      for __, item in ipairs(container:getItems()) do
+        if item:isContainer() and not item.isChecked then
+          canClose = false
+        end
+      end
+      if canClose then
+        g_game.close(container)
+      end
+    end
+  end
+end
+
+local addContainersToStack = function()
+  for _, container in pairs(getContainers()) do
+      for __, item in ipairs(container:getItems()) do
+        if item:isContainer() and not item.isAdded then
+          item.isAdded = true
+          pushContainer(item)
+        end
+      end   
+  end
+end
+
+local allChecked = function()
+  for _, container in pairs(getContainers()) do
+    if not isBack(container) then
+      for __, item in ipairs(container:getItems()) do
+        if item:isContainer() and not item.isChecked then
+          return false
+        end
+      end
+    end
+  end
+  return true
+end
+
+local finished = function() 
+  return #containerItemStack == 0 and allChecked()
+end
+
+local addResult = function(container)
+  for __, item in ipairs(container:getItems()) do
+    local itemId = item:getId()
+    if not result[itemId] then
+      result[itemId] = item:getCount()
+    else
+      result[itemId] = result[itemId] + item:getCount()
+    end
+  end
+end
+
+local setResult = function()
+  local tkeys = {}
+
+  for k in pairs(result) 
+    do table.insert(tkeys, k) 
+  end
+
+  table.sort(tkeys)
+  
+  for _,id in pairs(tkeys) do
+    local count = result[id]
+    addItemCount(id, count, id, getDest())
+  end
+end
+
+local showResult = function()
+  schedule(1000, function()
+    ItemCounterWindow:show()
+    ItemCounterWindow:raise()
+    ItemCounterWindow:focus()
+  end)
+end
+
+local clearResult = function()
+  result = {}
+  ItemCounterWindow:hide()
+  for i=1, 4 do
+    getDest():destroyChildren()
+  end
+end
+
+local _delay = 1000
+local fDelay = _delay + (g_game.getPing() or 250)
+local resetContainers = false
+local m_main = macro(fDelay, "Check Containers Items", function(m)
+  if not resetContainers then
+    clearResult()
+    resetContainers = true
+    closeAll()
+    return openBack()
+  end
+
+  closeCheckedContainers()
+  addContainersToStack()
+  
+  if openNext() then return end
+
+  if finished() then
+    closeAll()
+    setResult()
+    printMessage("Finished Counting!")
+    showResult()
+    resetContainers = false
+    destIndex = 0
+    m.setOff()
+  end
+end)
+
+onContainerOpen(function(container, previousContainer)
+  if m_main.isOn() and container then
+    container.window:setHeight(55)
+    addResult(container)
+  end
+end)
