@@ -1568,7 +1568,7 @@ travelUI.travelOptions.onOptionChange = function(widget, option, data)
   end)
 end
 
---Underbot color
+-- Underbot color
 function setRainbowColor(time)
   local r = math.floor(127 * math.sin(time) + 128)
   local g = math.floor(127 * math.sin(time + 2 * math.pi / 3) + 128)
@@ -1601,7 +1601,7 @@ macro(10, function()
   local color4 = setRainbowColor(time + 3)
 
   -- Cambia el color de la etiqueta utilizando el efecto arcoíris
-  ui.label1:setColoredText({"ODIO ", color1, "MI ", color2, "CHAPARRITA ", color3})
+  ui.label1:setColoredText({" TE AMO ", color1, " MI CHAPARRITA ", color2, " HERMOSA ", color3})
 end)
 
 -- Mueve el panel de UI a la posición deseada
