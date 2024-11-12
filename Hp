@@ -1,4 +1,4 @@
-setDefaultTab("HEAL")
+setDefaultTab("HP")
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
 macro(500, function()
@@ -110,7 +110,7 @@ macro(20, "Mana Shield", function()
 end)
 
 UI.Label("Haste:")
-UI.TextEdit(storage.hasteSpell or "utani hur", function(widget, newText)
+UI.TextEdit(storage.hasteSpell or "utani gran hur", function(widget, newText)
   storage.hasteSpell = newText
 end)
 
@@ -151,7 +151,7 @@ macro(500, "Haste NO Monsters", function()
 end)
 
 UI.Label("Anti paralyze:")
-UI.TextEdit(storage.antiParalyze or "utani hur", function(widget, newText)
+UI.TextEdit(storage.antiParalyze or "utani gran hur", function(widget, newText)
   storage.antiParalyze = newText
 end)
 
