@@ -1,121 +1,39 @@
-setDefaultTab("City")
+-- Underbot color
+function setRainbowColor(time)
+  local r = math.floor(127 * math.sin(time) + 128)
+  local g = math.floor(127 * math.sin(time + 2 * math.pi / 3) + 128)
+  local b = math.floor(127 * math.sin(time + 4 * math.pi / 3) + 128)
+  return string.format("#%02X%02X%02X", r, g, b)
+end
 
--- Coloca Linea Texto Colores
-local qw = UI.Label()
-macro(500, function()
-qw:setText("Me Gustan los GAY")
-qw:setColor("pink")
-qw:setFont("verdana-11px-rounded")
-schedule(600, function()
-  qw:setColor("red")
-end)
-schedule(800, function()
-  qw:setColor("yellow")
-end)
-schedule(1200, function()
-  qw:setColor("orange")
-end)
-schedule(1400, function()
-  qw:setColor("#00FFFF")
-end)
-end)
+local ui = setupUI([[
+Panel
+  height: 120
+  width: 100
+  anchors.left: parent.left
+  anchors.top: parent.top
+  margin-left: 3
 
-thais = macro(1000, "Thais", function()
-CaveBot.Conversation("hi", "thais", "yes")
-thais.setOff()
-end)
+  Label
+    id: label1
+    margin-top: 50
+    font: verdana-11px-rounded
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 240     
+]], modules.game_interface.getMapPanel())
 
-venore = macro(1000, "Venore", function()
-CaveBot.Conversation("hi", "venore", "yes")
-venore.setOff()
-end)
+macro(10, function()
+  local time = os.clock() * 4
+  local color1 = setRainbowColor(time)
+  local color2 = setRainbowColor(time + 1)
+  local color3 = setRainbowColor(time + 2)
+  local color4 = setRainbowColor(time + 3)
 
-porthope = macro(1000, "PortHope", function()
-CaveBot.Conversation("hi", "port hope", "yes")
-porthope.setOff()
-end)
-
-libertybay = macro(1000, "Roshamuul", function()
-CaveBot.Conversation("hi", "Roshamuul", "yes")
-libertybay.setOff()
+  -- Cambia el color de la etiqueta utilizando el efecto arcoíris
+  ui.label1:setColoredText({"SOY ", color1, "EL ", color2, "MAS ", color3, "GAY", color4})
 end)
 
-yalahar = macro(1000, "Yalahar", function()
-CaveBot.Conversation("hi", "yalahar", "yes")
-yalahar.setOff()
-end)
-
-edron = macro(1000, "Edron", function()
-CaveBot.Conversation("hi", "edron", "yes")
-edron.setOff()
-end)
-
-abdendriel = macro(1000, "AbDendriel", function()
-CaveBot.Conversation("hi", "ab'dendriel", "yes")
-abdendriel.setOff()
-end)
-
-darashia = macro(1000, "Darashia", function()
-CaveBot.Conversation("hi", "darashia", "yes", "yes")
-darashia.setOff()
-end)
-
-ankrahmun = macro(1000, "Ankrahmun", function()
-CaveBot.Conversation("hi", "ankrahmun", "yes")
-ankrahmun.setOff()
-end)
-
-svargrond = macro(1000, "Svargrond", function()
-CaveBot.Conversation("hi", "svargrond", "yes")
-svargrond.setOff()
-end)
-
-libertybay = macro(1000, "Liberty Bay", function()
-CaveBot.Conversation("hi", "Liberty Bay", "yes")
-libertybay.setOff()
-end)
-
-farmine = macro(1000, "Farmine", function()
-CaveBot.Conversation("hi", "farmine", "yes")
-farmine.setOff()
-end)
-
-dustydunes = macro(1000, "Dusty dunes", function()
-CaveBot.Conversation("hi", "dusty dunes", "yes")
-dustydunes.setOff()
-end)
-
-deathisland = macro(1000, "Deathbone Island", function()
-CaveBot.Conversation("hi", "deathbone island", "yes")
-deathisland.setOff()
-end)
-
-goroma = macro(1000, "Goroma", function()
-CaveBot.Conversation("hi", "goroma", "yes")
-goroma.setOff()
-end)
-
-cormaya = macro(1000, "Cormaya", function()
-CaveBot.Conversation("hi", "cormaya", "yes")
-cormaya.setOff()
-end)
-
-fenrock = macro(1000, "Fenrock", function()
-CaveBot.Conversation("hi", "fenrock", "yes")
-fenrock.setOff()
-end)
-
-pyre = macro(1000, "Pyre", function()
-CaveBot.Conversation("hi", "pyre", "yes")
-pyre.setOff()
-end)
-
-oken = macro(1000, "Oken", function()
-CaveBot.Conversation("hi", "oken", "yes")
-oken.setOff()
-end)
-
-gengia = macro(1000, "Gengia", function()
-CaveBot.Conversation("hi", "gengia", "yes")
-gengia.setOff()
-end)
+-- Mueve el panel de UI a la posición deseada
+ui:breakAnchors() -- Rompe las restricciones de posición actuales del panel
+ui:move(380,50) -- Mueve el panel a la posición (300, 10)
