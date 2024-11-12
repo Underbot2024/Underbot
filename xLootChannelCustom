@@ -1,0 +1,49 @@
+-- Scrypt Creado By Undersky 
+
+local function add(t, text, color, last)
+    table.insert(t, text)
+    table.insert(t, color)
+    if not last then
+        table.insert(t, ", ")
+        table.insert(t, "#FFFFFF")
+    end
+end
+
+local t = {}
+local mt = {}
+local tabName = "Monster Eggs"
+local console = modules.game_console
+local tab = console.getTab(tabName) or console.addTab(tabName, true)
+
+local itemsFiltrar = {"monster egg", "a monster egg", "monster egg (Uncommon)", "monster egg (Rare)", "monster egg (Legendary)", "monster egg (Godly)", "monster egg (Rare).", "monster egg (Legendary).", "a monster egg (Rare)", "a monster egg (Rare).", "a monster egg (Legendary)", "a monster egg (Legendary).", "a monster egg  Rare", "a monster egg Legendary", "a monster egg uncommon", "a monster egg Uncommon", "a monster egg Legendary", "a monster egg rare", "monster egg rare", "monster egg legendary",}
+
+onTextMessage(function(mode, text)
+    if not text:find("Loot of") then return end
+    local msg = text:split(":")
+    
+    -- Filtra por items específicos
+    for _, itemName in pairs(itemsFiltrar) do
+        if msg[2]:find(itemName) then
+            add(t, os.date('%H:%M') .. ' ' .. msg[1] .. ": ", "#FFFFFF", true)
+            
+            -- Cambia el color según el contenido del mensaje
+            if msg[2]:find("nothing") then
+                add(t, msg[2], "#FF0000", true)  -- Rojo
+            else
+                add(t, msg[2], "#00FF00", true)  -- Verde
+            end
+            
+            -- Agrega el texto a la consola
+            console.addText(text, { color = '#00EB00' }, tabName, "")
+            
+            -- Actualiza el texto en la consola
+            local panel = console.consoleTabBar:getTabPanel(tab)
+            local consoleBuffer = panel:getChildById('consoleBuffer')
+            local message = consoleBuffer:getLastChild()
+            message:setColoredText(t)
+            
+            -- Limpia la tabla para el próximo mensaje
+            t = {}
+        end
+    end
+end)
