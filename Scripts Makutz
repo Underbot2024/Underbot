@@ -912,24 +912,8 @@ local holdtIcon = addIcon("HoldT", {item = 3240, text = "HoldT", switchable = tr
 end)
 
 activeDrag(holdtIcon, 'holdt', storage.holdt or {})
-local function openFromEmpty()
-  containers = getContainers()
-  if #containers < 1 and containers[0] == nil then
-    bpItem = getBack()
-    if bpItem ~= nil then
-      g_game.open(bpItem)
-    end
-  end
-end
 
-openFromEmpty()
-macro(200,function()
-  containers = getContainers()
-  if #containers < 1 and containers[0] == nil then
-    openFromEmpty()
-    return
-  end
-end)
+-- item counter
 local panelName = "ItemCounter"
 local config = storage[panelName]
 
