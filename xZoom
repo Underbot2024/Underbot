@@ -1,0 +1,65 @@
+setDefaultTab("Main")
+local tcgameMapUI = setupUI([[
+Panel
+  margin: 3
+  height: 72
+  layout:
+    type: verticalBox
+
+  Label
+    id: title
+    text: Zoom Mapa
+    margin-top: 3
+    text-align: center
+    font: verdana-11px-rounded
+
+  Panel
+    id: buttons
+    margin-left: 5
+    layout:
+      type: grid
+      cell-size: 52 16
+      cell-spacing: 4
+      num-columns: 3
+
+    margin-top: 6
+    height: 20
+    Button
+      id: plus
+      font: verdana-11px-rounded
+      !text: '+1'
+
+    Button
+      id: minus
+      font: verdana-11px-rounded
+      !text: '-1'
+
+    Button
+      id: twelve
+      font: verdana-11px-rounded
+      !text: '12'
+
+  Button
+    id: reset
+    height: 17
+    font: verdana-11px-rounded
+    !text: 'reset'
+    color: red
+    margin-left: 3
+    margin-right: 3
+
+  ]], parent)
+local gameMapPanel = modules.game_interface.getMapPanel()
+tcgameMapUI.buttons.plus.onClick = function()
+  gameMapPanel:zoomIn()
+end
+tcgameMapUI.buttons.minus.onClick = function()
+  gameMapPanel:zoomOut()
+end
+tcgameMapUI.buttons.twelve.onClick = function()
+  gameMapPanel:setZoom(12)
+end
+
+tcgameMapUI.reset.onClick = function()
+  gameMapPanel:setZoom(11)
+end
