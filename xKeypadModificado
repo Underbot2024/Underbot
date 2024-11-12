@@ -1,0 +1,39 @@
+local keypad = g_ui.getRootWidget():recursiveGetChildById("keypad")
+keypad:breakAnchors()
+
+local posX = 760
+local posY = 280
+local width = 200
+local height = 200
+
+-- Creado por MadGenius
+UI.Label("Posicion X:")
+local posXInput = UI.TextEdit(tostring(posX))
+posXInput.onTextChange = function(widget, text)
+    posX = tonumber(text) or 200
+    keypad:move(posX, posY)
+end
+
+UI.Label("Posicion Y:")
+local posYInput = UI.TextEdit(tostring(posY))
+posYInput.onTextChange = function(widget, text)
+    posY = tonumber(text) or 200
+    keypad:move(posX, posY)
+end
+
+UI.Label("Ancho:")
+local widthInput = UI.TextEdit(tostring(width))
+widthInput.onTextChange = function(widget, text)
+    width = tonumber(text) or 300
+    keypad:resize(width, height)
+end
+
+UI.Label("Altura:")
+local heightInput = UI.TextEdit(tostring(height))
+heightInput.onTextChange = function(widget, text)
+    height = tonumber(text) or 300
+    keypad:resize(width, height)
+end
+
+keypad:move(posX, posY)
+keypad:resize(width, height)
