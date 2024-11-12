@@ -1,0 +1,39 @@
+--Underbot color
+function setRainbowColor(time)
+  local r = math.floor(127 * math.sin(time) + 128)
+  local g = math.floor(127 * math.sin(time + 2 * math.pi / 3) + 128)
+  local b = math.floor(127 * math.sin(time + 4 * math.pi / 3) + 128)
+  return string.format("#%02X%02X%02X", r, g, b)
+end
+
+local ui = setupUI([[
+Panel
+  height: 120
+  width: 100
+  anchors.left: parent.left
+  anchors.top: parent.top
+  margin-left: 3
+
+  Label
+    id: label1
+    margin-top: 50
+    font: verdana-11px-rounded
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 240     
+]], modules.game_interface.getMapPanel())
+
+macro(10, function()
+  local time = os.clock() * 4
+  local color1 = setRainbowColor(time)
+  local color2 = setRainbowColor(time + 1)
+  local color3 = setRainbowColor(time + 2)
+  local color4 = setRainbowColor(time + 3)
+
+  -- Cambia el color de la etiqueta utilizando el efecto arcoíris
+  ui.label1:setColoredText({"BOT ", color1, "ACTIVO ", color2, "DE ", color3, "UNDERSKY", color4})
+end)
+
+-- Mueve el panel de UI a la posición deseada
+ui:breakAnchors() -- Rompe las restricciones de posición actuales del panel
+ui:move(380,10) -- Mueve el panel a la posición (300, 10)
