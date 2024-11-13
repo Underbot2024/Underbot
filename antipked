@@ -1,5 +1,8 @@
+local executed = false
+
 macro(1000, "Exori", function()
-    if g_game.isAttacking() then
+    if g_game.isAttacking() and not executed then
         saySpell('exori')
+        executed = true  -- Marca que el macro ya se ejecutó
     end
 end)
