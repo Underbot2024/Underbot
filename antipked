@@ -1,9 +1,20 @@
--- Loot Macro
-local executed = false  -- Mueve esta variable fuera del macro para que sea global
-local exori = macro(500, "Echizo", function()
-    if g_game.isAttacking() and not executed then
-        saySpell('exori')
-        executed = true  -- Marca que el macro ya se ejecutó
-        schedule(1000, function() executed = false end)  -- Reinicia la variable después de 1 segundo
+-- Script para lanzar "exori" en OTClientv8
+macro(1000, "Lanzar Exori", function()
+    -- Comprobamos si el jugador tiene suficiente mana para lanzar el hechizo
+    if player:getMana() >= 110 then
+        -- Contamos el número de criaturas cercanas en un radio de 1 casilla
+        local creatures = getSpectators(pos(), false)  -- false indica que no se cuentan jugadores
+
+        local count = 0
+        for _, creature in ipairs(creatures) do
+            if creature:isMonster() and creature:isTarget() then
+                count = count + 1
+            end
+        end
+
+        -- Lanzamos el hechizo si hay 3 o más criaturas cerca
+        if count >= 3 then
+            say("exori")
+        end
     end
 end)
