@@ -1,5 +1,5 @@
 macro(1000, "Exori", function()
-if g_game.isAttacking() then
-saySpell('exori', 200)
-end
+    if g_game.isAttacking() then
+        saySpell('exori')
+    end
 end)
