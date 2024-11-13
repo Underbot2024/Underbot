@@ -1,5 +1,0 @@
-warning = function() 
-    --Made By VivoDibra#1182
-    --This will remove lots of others warning messages too, be warned ;P
-    return  
-end
