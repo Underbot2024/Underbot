@@ -1,0 +1,35 @@
+--- Antipk
+local idRune = 3155
+local multiTargetSpell = 'exevo gran mas frigo'
+local distance = 4
+local amountOfMonsters = 3
+
+local antipked = addIcon("antipk",{item =9056, text= "ANTIPK"}, macro(1300,function()
+local isSafe = true
+local specAmount = 0
+
+if not g_game.isAttacking() then
+    return
+end
+
+for i,mob in ipairs(getSpectators()) do
+    if (getDistanceBetween(player:getPosition(), mob:getPosition()) <= distance and mob:isMonster()) then
+        specAmount = specAmount + 1
+    end
+    if (mob:isPlayer() and (player:getName() ~= mob:getName()) and g_game.isAttacking(storage.Spell1)) then
+        isSafe = false
+    end
+end
+
+if (specAmount >= amountOfMonsters) and isSafe then
+    say(multiTargetSpell)
+else
+    local attackingCreature = g_game.getAttackingCreature()
+    if attackingCreature then
+        g_game.useInventoryItemWith(idRune, attackingCreature)
+    end
+end
+end))
+
+antipked:breakAnchors()
+antipked:move(55,20)
