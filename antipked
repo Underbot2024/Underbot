@@ -1,8 +1,9 @@
-local executed = false
-
-macro(1000, "Exori", function()
+-- Loot Macro
+local executed = false  -- Mueve esta variable fuera del macro para que sea global
+local exori = macro(500, "Echizo", function()
     if g_game.isAttacking() and not executed then
         saySpell('exori')
         executed = true  -- Marca que el macro ya se ejecutó
+        schedule(1000, function() executed = false end)  -- Reinicia la variable después de 1 segundo
     end
 end)
