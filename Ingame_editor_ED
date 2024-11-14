@@ -2,7 +2,7 @@ setDefaultTab("Tools")
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
 macro(500, function()
-qw:setText("E X T R A S")
+qw:setText("T O O L S")
 qw:setColor("pink")
 qw:setFont("verdana-11px-rounded")
 schedule(600, function()
