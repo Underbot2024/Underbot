@@ -1,5 +1,4 @@
 setDefaultTab("Tools")
-
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
 macro(500, function()
@@ -1345,7 +1344,6 @@ local function getNear(pos)
 
   return tiles
 end
-
 -- auto move container on ground
 onPlayerPositionChange(function(newPos, oldPos)
   if not config.enabled then return true end
