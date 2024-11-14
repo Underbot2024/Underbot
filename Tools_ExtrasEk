@@ -1,3 +1,14 @@
+-- Verificar si la variable global 'executed' está definida
+if executed then
+    print("El script ya ha sido ejecutado previamente.")
+    return
+else
+    -- Marcar la variable global 'executed' como verdadera para indicar que el script ha sido ejecutado
+    executed = true
+
+    -- Aquí comienza el resto del código que deseas ejecutar una sola vez
+    print("Ejecutando el script por primera vez...")
+
 setDefaultTab("Macro")
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
@@ -18,17 +29,6 @@ schedule(1400, function()
   qw:setColor("#00FFFF")
 end)
 end)
-
--- Verificar si la variable global 'executed' está definida
-if executed then
-    print("El script ya ha sido ejecutado previamente.")
-    return
-else
-    -- Marcar la variable global 'executed' como verdadera para indicar que el script ha sido ejecutado
-    executed = true
-
-    -- Aquí comienza el resto del código que deseas ejecutar una sola vez
-    print("Ejecutando el script por primera vez...")
 local panelName = "EquipperPanel"
 local ui = setupUI([[
 Panel
