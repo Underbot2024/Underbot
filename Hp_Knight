@@ -1,3 +1,4 @@
+setDefaultTab("Hp")
 if type(storage.healing1) ~= "table" then
   storage.healing1 = {on=false, title="HP%", text="exura", min=51, max=90}
 end
