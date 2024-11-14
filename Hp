@@ -1,4 +1,4 @@
-setDefaultTab("HP")
+setDefaultTab("Hola")
 UI.Label("HP By Undersky")
 
 local qw = UI.Label()
