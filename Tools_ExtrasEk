@@ -8,7 +8,7 @@ else
 
     -- Aquí comienza el resto del código que deseas ejecutar una sola vez
     print("Ejecutando el script por primera vez...")
-
+setDefaultTab("Macro")
 local panelName = "EquipperPanel"
 local ui = setupUI([[
 Panel
