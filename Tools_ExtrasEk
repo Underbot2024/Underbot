@@ -1,15 +1,13 @@
--- Verificar si el script ya se ejecutó leyendo de g_storage
-if g_storage.get("script_executed") then
-    print("El script ya ha sido ejecutado anteriormente.")
-    return -- Detener el script si ya se ejecutó
+-- Verificar si la variable global 'executed' está definida
+if executed then
+    print("El script ya ha sido ejecutado previamente.")
+    return
 else
-    -- Marcar que el script ya se ejecutó
-    g_storage.set("script_executed", true)
-    
-    -- Mensaje de ejecución inicial
-    print("El script se está ejecutando por primera vez.")
-    
-    -- Equiper
+    -- Marcar la variable global 'executed' como verdadera para indicar que el script ha sido ejecutado
+    executed = true
+
+    -- Aquí comienza el resto del código que deseas ejecutar una sola vez
+    print("Ejecutando el script por primera vez...")
 local panelName = "EquipperPanel"
 local ui = setupUI([[
 Panel
