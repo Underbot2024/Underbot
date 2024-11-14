@@ -1,4 +1,7 @@
+local executed = false
+
 setDefaultTab("Tools")
+
 -- Coloca Linea Texto Colores
 local qw = UI.Label()
 macro(500, function()
@@ -1344,6 +1347,7 @@ local function getNear(pos)
 
   return tiles
 end
+
 -- auto move container on ground
 onPlayerPositionChange(function(newPos, oldPos)
   if not config.enabled then return true end
@@ -1410,3 +1414,11 @@ end)
 pickupIcon.text:setFont('verdana-11px-rounded')
 
 activeDrag(pickupIcon, 'pickup', storage.pickup or {})
+
+
+
+if not executed then
+  executed = true
+  -- Aquí se puede poner el código que se deba ejecutar solo una vez
+  print("El script se ejecutó por primera vez.")
+end
