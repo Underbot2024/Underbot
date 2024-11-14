@@ -1,5 +1,5 @@
-local executed = false
-
+if not _G.executed then
+  _G.executed = true
 setDefaultTab("Tools")
 
 -- Coloca Linea Texto Colores
@@ -1416,9 +1416,4 @@ pickupIcon.text:setFont('verdana-11px-rounded')
 activeDrag(pickupIcon, 'pickup', storage.pickup or {})
 
 
-
-if not executed then
-  executed = true
-  -- Aquí se puede poner el código que se deba ejecutar solo una vez
-  print("El script se ejecutó por primera vez.")
-end
+end -- End of single execution block
