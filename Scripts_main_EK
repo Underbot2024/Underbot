@@ -709,6 +709,8 @@ onPlayerPositionChange(function(x,y)
 end)
 
 -- Newhealer tirar sio 
+setDefaultTab("Main")
+
 -- Crea una etiqueta de UI con el texto 
 local name = UI.Label(">> CURAR * AMIGO <<")
 
@@ -1220,8 +1222,8 @@ local function activeDrag(icon, nameMacro, position)
   end
 end
 
--- Crea el icono de activacion/desactivacion de Friend Healer
-local friendHealerIcon = addIcon("Friend Healer", {item = 2110, text = "Friend Healer", switchable = true, moveable = true}, function(icon, isOn)
+-- Crea el icono de activacion/desactivaciÃ³n de Friend Healer
+local friendHealerIcon = addIcon("Friend Healer", {item = 3160, text = "Heal Friend", switchable = true, moveable = true}, function(icon, isOn)
     config.enabled = isOn
     ui.title:setOn(isOn)
 end)
