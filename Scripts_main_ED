@@ -709,6 +709,7 @@ onPlayerPositionChange(function(x,y)
 end)
 
 -- Newhealer tirar sio 
+-- Crea una etiqueta de UI con el texto 
 local name = UI.Label(">> CURAR * AMIGO <<")
 
 -- Define una macro que se ejecuta cada 800 milisegundos
@@ -717,17 +718,16 @@ macro(800, function()
 
   -- Itera sobre una lista de colores
   for k, color in ipairs({"#FFFF00", "#00FFFF", "#00FF00", "#87CEEB"}) do
-    -- Programa una función que cambia el color de la etiqueta después de un retraso
+    -- Programa una funciÃ³n que cambia el color de la etiqueta despuÃ©s de un retraso
     schedule(rainbowDelay, function()
       name:setColor(color) -- Establece el color de la etiqueta
     end)
 
-    -- Incrementa el retraso para el próximo color
+    -- Incrementa el retraso para el prÃ³ximo color
     rainbowDelay = rainbowDelay + 300 -- Tiempo entre colores
   end
 end)
 
-setDefaultTab("Main")
 local panelName = "newHealer"
 local ui = setupUI([[
 Panel
@@ -1183,6 +1183,52 @@ macro(100, function()
         return friendHealerAction(healTarget.creature, inMasResRange)
     end
 end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+-- Crea el icono de activacion/desactivacion de Friend Healer
+local friendHealerIcon = addIcon("Friend Healer", {item = 2110, text = "Friend Healer", switchable = true, moveable = true}, function(icon, isOn)
+    config.enabled = isOn
+    ui.title:setOn(isOn)
+end)
+
+friendHealerIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(friendHealerIcon, 'friendHealer', storage.friendHealer or {})
 
 -- ItemCounter
 local panelName = "ItemCounter"
