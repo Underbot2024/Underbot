@@ -302,9 +302,24 @@ local hold = 0
 local candidates = {}
 local shouldHold = false
 
-local holdMwIcon = macro(200, function(m)
+-- Constants for item IDs
+local HOLD_MW_RUNE = 3180
+local HOLD_WG_RUNE = 3156
+local HOLD_ITEM_ID = 2128
+
+-- Function to get the rune ID based on the tile text
+local function getRuneByText(text)
+  if text == "HOLD MW" then
+    return HOLD_MW_RUNE
+  elseif text == "HOLD WG" then
+    return HOLD_WG_RUNE
+  end
+  return nil
+end
+
+local holdMwIcon = macro(1000, function(m)
   shouldHold = true
-  schedule(200, function()
+  schedule(500, function()
     if m.isOn() then return end
     shouldHold = false
     candidates = {}
@@ -314,60 +329,60 @@ local holdMwIcon = macro(200, function(m)
   end)
 end)
 
-local m = macro(20, function()
-    if #candidates == 0 then return end
-    for i, pos in pairs(candidates) do
-      local tile = g_map.getTile(pos)
-      if tile then
-        if tile:getText():len() == 0 then 
-          table.remove(candidates, i)
-        end
-        local rune = tile:getText() == "HOLD MW" and 3180 or tile:getText() == "HOLD WG" and 3156
+local m = macro(1000, function()
+  if #candidates == 0 then return end
+  for i = #candidates, 1, -1 do
+    local pos = candidates[i]
+    local tile = g_map.getTile(pos)
+    if tile then
+      if tile:getText():len() == 0 then 
+        table.remove(candidates, i)
+      else
+        local rune = getRuneByText(tile:getText())
         if tile:canShoot() and not isInPz() and tile:isWalkable() and tile:getTopUseThing():getId() ~= 2130 then
-          if math.abs(player:getPosition().x-tile:getPosition().x) < 8 and math.abs(player:getPosition().y-tile:getPosition().y) < 6 then
+          if math.abs(player:getPosition().x - tile:getPosition().x) < 8 and math.abs(player:getPosition().y - tile:getPosition().y) < 6 then
             rune = findItem(rune)            
             return useWith(rune, tile:getTopUseThing())
           end
         end
       end
     end
+  end
 end)
 
 onRemoveThing(function(tile, thing)  
-    if thing:getId() ~= 2128 then return end
-    if tile:getText():find("HOLD") then
-        table.insert(candidates, tile:getPosition())
-        local rune = tile:getText() == "HOLD MW" and 3180 or tile:getText() == "HOLD WG" and 3156
-        if math.abs(player:getPosition().x-tile:getPosition().x) < 8 and math.abs(player:getPosition().y-tile:getPosition().y) < 6 then
-          print(rune)
-          rune = findItem(rune)  
-          return useWith(rune, tile:getTopUseThing())
-        end
+  if thing:getId() ~= HOLD_ITEM_ID then return end
+  if tile:getText():find("HOLD") then
+    table.insert(candidates, tile:getPosition())
+    local rune = getRuneByText(tile:getText())
+    if math.abs(player:getPosition().x - tile:getPosition().x) < 8 and math.abs(player:getPosition().y - tile:getPosition().y) < 6 then
+      rune = findItem(rune)  
+      return useWith(rune, tile:getTopUseThing())
     end
+  end
 end)
 
 onAddThing(function(tile, thing)  
-    if m.isOff() then return end
-    if thing:getId() ~= 2128 then return end
-    if tile:getText():len() > 0 then
-        table.remove(candidates, table.find(candidates,tile))
-    end
+  if m.isOff() then return end
+  if thing:getId() ~= HOLD_ITEM_ID then return end
+  if tile:getText():len() > 0 then
+    table.remove(candidates, table.find(candidates, tile))
+  end
 end)
 
 onUseWith(function(pos, itemId, target, subType)
-    if not shouldHold or (itemId ~= 3180 and itemId ~= 3156 ) then return end
-    
-    hold = now    
-    local tile = g_map.getTile(target:getPosition())
-    if not tile then return end
-
-    if itemId == 3180 then
+  if not shouldHold or (itemId ~= HOLD_MW_RUNE and itemId ~= HOLD_WG_RUNE) then return end
   
-        tile:setText("HOLD MW")
-    else
-        tile:setText("HOLD WG")
-    end
-    table.insert(candidates, tile:getPosition()) 
+  hold = now    
+  local tile = g_map.getTile(target:getPosition())
+  if not tile then return end
+
+  if itemId == HOLD_MW_RUNE then
+    tile:setText("HOLD MW")
+  else
+    tile:setText("HOLD WG")
+  end
+  table.insert(candidates, tile:getPosition()) 
 end)
 
 local function activeDrag(icon, nameMacro, position)
@@ -394,8 +409,8 @@ local function activeDrag(icon, nameMacro, position)
 
   icon.onDragMove = function(widget, mousePos, moved)
     local parentRect = widget:getParent():getRect()
-    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
-    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    local x = math.min(math.max(0, mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0, mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
     widget:move(x, y)
     icon.moving = { x = icon:getX(), y = icon:getY() }
     return true
@@ -406,13 +421,13 @@ local function activeDrag(icon, nameMacro, position)
   end
 end
 
-local holdMwIcon = addIcon("holdMw", {item = 2128, text = "HoldMw", switchable = true, moveable = true}, function(icon, isOn)
+local holdMwIcon = addIcon("holdMw", { item = HOLD_ITEM_ID, text = "HoldMw", switchable = true, moveable = true }, function(icon, isOn)
   holdMwIcon.setOn(isOn)
 end)
 
 holdMwIcon.text:setFont('verdana-11px-rounded')
 
-activeDrag(holdMwIcon, 'holdMwIcon', storage.holdMwIcon or {})
+activeDrag(holdMwIcon, 'holdMw', storage.holdMw or {})
 
 -- Falcon
 local macroName = "Use Falcon"
