@@ -1487,7 +1487,7 @@ onMissle(function(missle)
 end)
 
 -- Face monster
-macro(100, "Face Monster", function()
+macro(1000, "Face Monster", function()
     local target = g_game.getAttackingCreature()
     if target then
         local playerPos = player:getPosition()
@@ -1542,7 +1542,7 @@ if not storage[panelName] then storage[panelName] = { spell = spell, maxDist = m
 
 local config = storage[panelName]
 
-local autoWave = macro(100,"Hechizo frontal", function()
+local autoWave = macro(1200,"Hechizo frontal", function()
   local maxDist = tonumber(config.maxDist)
   local spell = config.spell
   local enemy = target()
@@ -1638,7 +1638,7 @@ storage.Spell2 = text
 end)
 
 -- Script By Asking
-local targeting = macro(500, "Target Inteligente", function()
+local targeting = macro(1000, "Target Inteligente", function()
     if isInPz() then
         targetMonster = nil
         return
