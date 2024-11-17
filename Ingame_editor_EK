@@ -1384,6 +1384,106 @@ end)
 pickupIcon.text:setFont('verdana-11px-rounded')
 
 activeDrag(pickupIcon, 'pickup', storage.pickup or {})
+
+-- cuenta jugadores en pantalla
+storage.showJugadorWidget = storage.showJugadorWidget or false
+
+local widgetConfig = [[
+UIWidget
+  background-color: black
+  opacity: 0.8
+  padding: 0 5
+  focusable: true
+  phantom: false
+  draggable: true
+  text-auto-resize: true
+  color: white
+  text-align: left 
+]]
+
+storage.posicionWidgetJugadores = storage.posicionWidgetJugadores or {}
+local jugadoresWidget = {}
+
+local checkBoxJugadorWidget = setupUI([[
+CheckBox
+  id: checkBoxJugadorWidget
+  font: cipsoftFont
+  text: Show Player Widget
+]])
+checkBoxJugadorWidget:setChecked(storage.showJugadorWidget)
+checkBoxJugadorWidget.onCheckChange = function(widget, value)
+    storage.showJugadorWidget = value
+    if not value and jugadoresWidget["widget"] then
+        jugadoresWidget["widget"]:destroy()
+        jugadoresWidget["widget"] = nil
+    end
+end
+
+local function attachWidgetCallbacks(key)
+    local dobleclick = false
+
+    jugadoresWidget[key].onDragEnter = function(widget, mousePos)
+        if not modules.corelib.g_keyboard.isCtrlPressed() and not dobleclick then return false end
+        widget:breakAnchors()
+        widget.movingReference = { x = mousePos.x - widget:getX(), y = mousePos.y - widget:getY() }
+        return true
+    end
+
+    jugadoresWidget[key].onDragMove = function(widget, mousePos)
+        local parentRect = widget:getParent():getRect()
+        local x = math.min(math.max(parentRect.x, mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+        local y = math.min(math.max(parentRect.y - widget:getParent():getMarginTop(), mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+        widget:move(x, y)
+        modules.game_textmessage.displayGameMessage("Moviendo el widget a nueva posición.")
+        storage.posicionWidgetJugadores[key] = { x = x, y = y }
+        return true
+    end
+
+    jugadoresWidget[key].onDragLeave = function(widget)
+        storage.posicionWidgetJugadores[key] = { x = widget:getX(), y = widget:getY() }
+        return true
+    end
+
+    jugadoresWidget[key].onDoubleClick = function()
+        dobleclick = true
+        schedule(2000, function()
+            dobleclick = false
+        end)
+    end
+end
+
+macro(600, "Contar jugadores", function(macro)
+    if not macro.isOn then
+        if jugadoresWidget["widget"] then
+            jugadoresWidget["widget"]:destroy()
+            jugadoresWidget["widget"] = nil
+        end
+        return
+    end
+
+    if not storage.showJugadorWidget then
+        if jugadoresWidget["widget"] then
+            jugadoresWidget["widget"]:destroy()
+            jugadoresWidget["widget"] = nil
+        end
+        return
+    end
+
+    if not jugadoresWidget["widget"] then
+        jugadoresWidget["widget"] = setupUI(widgetConfig, g_ui.getRootWidget())
+        jugadoresWidget["widget"]:setPosition(storage.posicionWidgetJugadores["widget"] or { x = 637, y = 1 })
+        attachWidgetCallbacks("widget")
+    end
+
+    local cantidadJugadores = 0
+    for _, criatura in ipairs(getSpectators(player:getPosition().z)) do
+        if criatura:isPlayer() and criatura:getId() ~= player:getId() then
+            cantidadJugadores = cantidadJugadores + 1
+        end
+    end
+    jugadoresWidget["widget"]:setText("Players En Pantalla: " .. cantidadJugadores)
+end)
+
 -- ingame editor
 UI.Button("Ingame macro editor", function(newText)
   UI.MultilineEditorWindow(storage.ingame_macros or "", {title="Macro editor", description="You can add your custom macros (or any other lua code) here"}, function(text)
