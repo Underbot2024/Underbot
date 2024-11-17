@@ -1471,7 +1471,7 @@ macro(600, "Contar jugadores", function(macro)
 
     if not jugadoresWidget["widget"] then
         jugadoresWidget["widget"] = setupUI(widgetConfig, g_ui.getRootWidget())
-        jugadoresWidget["widget"]:setPosition(storage.posicionWidgetJugadores["widget"] or { x = 637, y = 1 })
+        jugadoresWidget["widget"]:setPosition(storage.posicionWidgetJugadores["widget"] or { x = 590, y = 1 })
         attachWidgetCallbacks("widget")
     end
 
