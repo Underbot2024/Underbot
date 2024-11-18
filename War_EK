@@ -178,7 +178,7 @@ s.equipItem = function(normalId, activeId, slot)
         return false
     end
   
-    if g_game.getClientVersion() >= 860 then
+    if g_game.getClientVersion() >= 870 then
       g_game.equipItemId(normalId)
       return true
     end
