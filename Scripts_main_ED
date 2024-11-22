@@ -1732,7 +1732,6 @@ Panel
     anchors.left: parent.left
     margin-top: 2
     text-auto-resize: true
-    font: verdana-11px-bold
 
   Label
     id: count
@@ -1742,7 +1741,6 @@ Panel
     margin-right: 18
     text-auto-resize: true
     color: orange
-    font: verdana-11px-bold
 
 ]], monsterKill.content)
 
