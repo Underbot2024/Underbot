@@ -1604,8 +1604,8 @@ saveKills = function(configFile, content)
     g_resources.writeFileContents(configFile, result);
 end
 
-MAIN_DIRECTORY = "/bot/" .. modules.game_bot.contentsPanel.config:getCurrentOption().text .. "/storage/" .. g_game.getWorldName() .. '/'
-STORAGE_DIRECTORY = MAIN_DIRECTORY .. "killcounter" .. '.json'
+MAIN_DIRECTORY = "/bot/" .. modules.game_bot.contentsPanel.config:getCurrentOption().text .. "/storage/"
+STORAGE_DIRECTORY = MAIN_DIRECTORY .. "monstercounter" .. '.json'
 storageMonsters = { kills = {}; }
 
 if not g_resources.directoryExists(MAIN_DIRECTORY) then
