@@ -1337,6 +1337,12 @@ macro(1100,"Exori Con", function()
     end
 end)
 
+macro(2000,"Exori Gran Con", function()
+    if g_game.isAttacking() then
+        say("exori gran con")
+    end
+end)
+
 macro(1100,"Exori San", function()
     if g_game.isAttacking() then
         say("exori san")
