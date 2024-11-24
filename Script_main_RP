@@ -1822,7 +1822,7 @@ macro(5000," Npc Task", function()
  end)
 end)
 
--- Muestra Exp y Skill
+-- muestra exp y skills
 local panelNombre = "tcSkills"
 local panelHud = setupUI([[
 OutlineLabel < Label
@@ -1919,6 +1919,21 @@ function mostrarNivel()
   })
 end
 
+DISTANCIA = 4
+function mostrarDistancia()
+  local etiqueta = panelHud[4] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(4)
+
+  local porcentajeActual = player:getSkillLevelPercent(DISTANCIA)
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Distancia: ', 'white',
+    player:getSkillLevel(DISTANCIA), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
 SHIELD = 5
 function mostrarShield()
   local etiqueta = panelHud[5] or UI.createWidget("OutlineLabel", panelHud)
@@ -1948,11 +1963,12 @@ function mostrarMagicLevel()
   })
 end
 
-local checarExpPorHora = macro(2000, 'Muestra Exp Y Skills', function()
+local checarExpPorHora = macro(5000, 'Muestra Exp Y Skills', function()
   actualizarExpPorHora()
   mostrarExpPorHora()
   mostrarStamina()
   mostrarNivel()
+  mostrarDistancia()
   mostrarShield()
   mostrarMagicLevel()
 end)
@@ -1965,6 +1981,7 @@ function inicializar()
   mostrarExpPorHora()
   mostrarStamina()
   mostrarNivel()
+  mostrarDistancia()
   mostrarShield()
   mostrarMagicLevel()
 end
