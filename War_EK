@@ -194,7 +194,7 @@ function crazyHPPercent()
   return (player:getHealth() / 100) * 10
 end
 
-s.m_main = macro(200, "E-Ring", function() 
+s.m_main = macro(50, "E-Ring", function() 
   local hp = hppercent()
   local mp = manapercent()
    
