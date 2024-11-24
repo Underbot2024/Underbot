@@ -1389,9 +1389,33 @@ macro(1200, "Exori Frigo", function()
   end
 end)
 
+macro(2000, "Exori Gran Frigo", function()
+  if g_game.isAttacking() then
+    say("exori gran frigo")
+  end
+end)
+
+macro(2000, "Exori Max Frigo", function()
+  if g_game.isAttacking() then
+    say("exori max frigo")
+  end
+end)
+
 macro(1200, "Exori Tera", function()
   if g_game.isAttacking() then
     say("exori tera")
+  end
+end)
+
+macro(2000, "Exori Gran Tera", function()
+  if g_game.isAttacking() then
+    say("exori gran tera")
+  end
+end)
+
+macro(2000, "Exori Max Tera", function()
+  if g_game.isAttacking() then
+    say("exori max tera")
   end
 end)
 
