@@ -1383,9 +1383,33 @@ macro(1300, "Exori Flam", function()
   end
 end)
 
+macro(2000, "Exori Gran Flam", function()
+  if g_game.isAttacking() then
+    say("exori gran flam")
+  end
+end)
+
+macro(2000, "Exori Max Flam", function()
+  if g_game.isAttacking() then
+    say("exori max flam")
+  end
+end)
+
 macro(1300, "Exori Vis", function()
   if g_game.isAttacking() then
     say("exori vis")
+  end
+end)
+
+macro(2000, "Exori Gran Vis", function()
+  if g_game.isAttacking() then
+    say("exori gran vis")
+  end
+end)
+
+macro(2000, "Exori Max Vis", function()
+  if g_game.isAttacking() then
+    say("exori max vis")
   end
 end)
 
