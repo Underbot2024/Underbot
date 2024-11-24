@@ -1822,7 +1822,7 @@ macro(5000," Npc Task", function()
  end)
 end)
 
--- Muestra Exp y Skill
+-- muestra exp y skills
 local panelNombre = "tcSkills"
 local panelHud = setupUI([[
 OutlineLabel < Label
@@ -1919,10 +1919,40 @@ function mostrarNivel()
   })
 end
 
-SHIELD = 5
-function mostrarShield()
+SWORD = 2
+function mostrarSword()
+  local etiqueta = panelHud[4] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(4)
+
+  local porcentajeActual = player:getSkillLevelPercent(SWORD)
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Sword: ', 'white',
+    player:getSkillLevel(SWORD), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
+AXE = 3
+function mostrarAxe()
   local etiqueta = panelHud[5] or UI.createWidget("OutlineLabel", panelHud)
   etiqueta:setId(5)
+
+  local porcentajeActual = player:getSkillLevelPercent(AXE)
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Axe Fighting: ', 'white',
+    player:getSkillLevel(AXE), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
+SHIELD = 5
+function mostrarShield()
+  local etiqueta = panelHud[6] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(6)
 
   local porcentajeActual = player:getSkillLevelPercent(SHIELD)
   local porcentajeFaltante = 100 - porcentajeActual
@@ -1935,8 +1965,8 @@ function mostrarShield()
 end
 
 function mostrarMagicLevel()
-  local etiqueta = panelHud[6] or UI.createWidget("OutlineLabel", panelHud)
-  etiqueta:setId(6)
+  local etiqueta = panelHud[7] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(7)
 
   local porcentajeActual = player:getMagicLevelPercent()
   local porcentajeFaltante = 100 - porcentajeActual
@@ -1948,11 +1978,13 @@ function mostrarMagicLevel()
   })
 end
 
-local checarExpPorHora = macro(2000, 'Muestra Exp Y Skills', function()
+local checarExpPorHora = macro(5000, 'Muestra Exp Y Skills', function()
   actualizarExpPorHora()
   mostrarExpPorHora()
   mostrarStamina()
   mostrarNivel()
+  mostrarSword()
+  mostrarAxe()
   mostrarShield()
   mostrarMagicLevel()
 end)
@@ -1965,6 +1997,8 @@ function inicializar()
   mostrarExpPorHora()
   mostrarStamina()
   mostrarNivel()
+  mostrarSword()
+  mostrarAxe()
   mostrarShield()
   mostrarMagicLevel()
 end
