@@ -1331,6 +1331,18 @@ saySpell('exori', 200)
 end
 end)
 
+macro(1500, "Exori Ico", function()
+if g_game.isAttacking() then
+say('exori ico')
+end
+end)
+
+macro(2000, "Exori Gran Ico", function()
+if g_game.isAttacking() then
+say('exori gran ico')
+end
+end)
+
 -- Exori Mas
 macro(1200, "Exori Mas", function()
 if g_game.isAttacking() then
