@@ -1388,6 +1388,32 @@ macro(300, "Utito Tempo Pro", function()
     end
 end)
 
+-- verifica si las softboots se acabaron y las manda ala bp y las repara script by Undersky 
+local softBootsID = 6530 -- ID de las Soft Boots en estado "worn"
+
+-- Funcion para obtener el slot de equipo (pies en este caso)
+function getFeetSlot()
+    local player = g_game.getLocalPlayer()
+    if player then
+        return player:getInventoryItem(InventorySlotFeet)
+    end
+    return nil
+end
+
+-- Macro para reparar Soft Boots
+macro(1000, "Recarga Soft Equipada", function()
+    -- Busca Soft Boots en el slot de los pies
+    local boots = getFeetSlot()
+-- By Undersky
+    if boots and boots:getId() == softBootsID then
+      g_game.move(boots, {x = 65535, y = nil, z = 0}, 1) -- Mueve el item al inventario
+       schedule(500, function () -- Espera 500ms
+            say('!softboots')
+        end)
+      delay(2000)
+    end
+end)
+
 -- Softboots
 local softboots = macro(2000,"Recarga Soft", function ()
 say("!softboots")
