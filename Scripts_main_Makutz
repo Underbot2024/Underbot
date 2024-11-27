@@ -21,12 +21,6 @@ schedule(1400, function()
 end)
 end)
 
--- Gravedad
-onCreaturePositionChange(function(creature, newPos, oldPoss)
-    creature:jump(100, 10000)
-end)
-
-
 -- HP
 if type(storage.healing1) ~= "table" then
   storage.healing1 = {on=false, title="HP%", text="exura", min=51, max=90}
