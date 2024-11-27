@@ -1,810 +1,157 @@
-setDefaultTab("Tools")
--- Coloca Linea Texto Colores
-local qw = UI.Label()
-macro(500, function()
-qw:setText("T O O L S")
-qw:setColor("pink")
-qw:setFont("verdana-11px-rounded")
-schedule(600, function()
-  qw:setColor("red")
-end)
-schedule(800, function()
-  qw:setColor("yellow")
-end)
-schedule(1200, function()
-  qw:setColor("orange")
-end)
-schedule(1400, function()
-  qw:setColor("#00FFFF")
-end)
-end)
+setDefaultTab("Main")
+-- Esconder Iconos
+if storage.ShowIcons == nil then
+  storage.ShowIcons = true
+end
 
--- ingame editor
-UI.Button("Ingame macro editor", function(newText)
-  UI.MultilineEditorWindow(storage.ingame_macros or "", {title="Macro editor", description="You can add your custom macros (or any other lua code) here"}, function(text)
-    storage.ingame_macros = text
-    reload()
-  end)
-end)
-UI.Button("Ingame hotkey editor", function(newText)
-  UI.MultilineEditorWindow(storage.ingame_hotkeys or "", {title="Hotkeys editor", description="You can add your custom hotkeys/singlehotkeys here"}, function(text)
-    storage.ingame_hotkeys = text
-    reload()
-  end)
-end)
-
-UI.Separator()
-
-for _, scripts in ipairs({storage.ingame_macros, storage.ingame_hotkeys}) do
-  if type(scripts) == "string" and scripts:len() > 3 then
-    local status, result = pcall(function()
-      assert(load(scripts, "ingame_editor"))()
-    end)
-    if not status then 
-      error("Ingame edior error:\n" .. result)
+function toggleIcons()
+  for i, child in ipairs(modules.game_interface.getMapPanel():getChildren()) do
+    if child:getStyleName() == "BotIcon" then
+      if storage.ShowIcons then
+        child:show() 
+      else
+        child:hide()
+      end
     end
   end
 end
 
--- Girar Script creado por Madgenius
-local actionUI = setupUI([[
-Panel
+schedule(100, function()
+  toggleIcons(storage.ShowIcons)
+end)
+
+addButton("", "Esconder Iconos", function()
+  storage.ShowIcons = not storage.ShowIcons
+  toggleIcons()
+end)
+
+-- Exiva
+local panelName = "tcLastExiva"
+local tcLastExiva = setupUI([[
+ExivaLabel < Label
   height: 12
+  background-color: #00000055
+  opacity: 0.89
+  anchors.horizontalCenter: parent.horizontalCenter
+  text-auto-resize: true
+  font: verdana-11px-rounded
 
-  Button
-    id: editPlayerList
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-left: 1
-    height: 18
-    text: Girar Hacia :
-]], parent)
+Panel
+  id: msgPanel
+  height: 26
+  width: 100
+  anchors.bottom: parent.bottom
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-bottom: 20
 
-g_ui.loadUIFromString([[
-ActionWindow < MainWindow
-  text: Rotacion
-  size: 130 190
-  
-  Button
-    id: northButton
-    text: UP
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 3
-    margin-left: 3
-    margin-right: 3
-    height: 24
-    font: verdana-11px-rounded
+  ExivaLabel
+    id: lblMessage
+    color: green
+    anchors.bottom: parent.bottom
+    !text: 'None.'
 
-  Button
-    id: eastButton
-    text: RIGHT
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 3
-    margin-left: 3
-    margin-right: 3
-    height: 24
-    font: verdana-11px-rounded
+  ExivaLabel
+    id: lblExiva
+    color: orange
+    anchors.bottom: prev.top
+    !text: 'Ultimo Exiva: None'
 
-  Button
-    id: westButton
-    text: LEFT
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 3
-    margin-left: 3
-    margin-right: 3
-    height: 24
-    font: verdana-11px-rounded
+]], modules.game_interface.getMapPanel())
 
-  Button
-    id: southButton
-    text: SUR
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 3
-    margin-left: 3
-    margin-right: 3
-    height: 24
-    font: verdana-11px-rounded
+local tclastExivaUI = setupUI([[
+Panel
+  margin: 3
+  height: 66
+  layout:
+    type: verticalBox
 
   HorizontalSeparator
     id: separator
-    anchors.right: parent.right
-    anchors.left: parent.left
-    anchors.top: prev.bottom
-    margin-top: 3
-    margin-bottom: 2
 
-  Button
-    id: closeButton
-    text: Cerrar
-    font: cipsoftFont
-    anchors.left: parent.left
-    anchors.bottom: parent.bottom
-    size: 100 22
-]])
+  Label
+    id: title
+    text: Last Exiva
+    margin-top: 1
+    text-align: center
+    font: verdana-11px-rounded
 
-local panelName = "Girar a"
+  Panel
+    id: time
+    height: 22
+    Label
+      !text: 'Time in seconds:'
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.right: next.left
+      text-align: center
+      height: 15
+      margin-right: 6
+      font: verdana-11px-rounded
+
+    BotTextEdit
+      id: text
+      text: 5
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 5
+      height: 17
+      width: 55
+      font: verdana-11px-rounded
+
+  ]], parent)
+
 if not storage[panelName] then
   storage[panelName] = {
-    enabled = false,
+    name = '',
+    timer = 5,
   }
 end
 
-local config = storage[panelName]
-
-rootWidget = g_ui.getRootWidget()
-if rootWidget then
-  local actionWindow = UI.createWindow('ActionWindow', rootWidget)
-  actionWindow:hide()
-
-  actionUI.editPlayerList.onClick = function(widget)
-    actionWindow:show()
-    actionWindow:raise()
-    actionWindow:focus()
-  end
-
-  actionWindow.closeButton.onClick = function(widget)
-    actionWindow:hide()
-  end
-
-  -- Funciones para girar en diferentes direcciones
-  local function turnNorth()
-    turn(0)  -- Girar al Norte
-  end
-
-  local function turnEast()
-    turn(1)  -- Girar al Este
-  end
-
-  local function turnSouth()
-    turn(2)  -- Girar al Sur
-  end
-
-  local function turnWest()
-    turn(3)  -- Girar al Oeste
-  end
-
-  local northButton = actionWindow:recursiveGetChildById('northButton')
-  northButton.onClick = turnNorth
-
-  local eastButton = actionWindow:recursiveGetChildById('eastButton')
-  eastButton.onClick = turnEast
-
-  local southButton = actionWindow:recursiveGetChildById('southButton')
-  southButton.onClick = turnSouth
-
-  local westButton = actionWindow:recursiveGetChildById('westButton')
-  westButton.onClick = turnWest
-end
-UI.Separator()
-UI.Label("Spy Up F11 & Down F12")
-local keyUp = "F11" -- aki pones con que tecla espias para arriba 
-local keyDown = "F12" -- aki pones con que tecla espias para abajo 
-
--- script
-local lockedLevel = pos().z
-local m = macro(1000, "Spy Level", function() end)
-
-onPlayerPositionChange(function(newPos, oldPos)
-    if oldPos.z ~= newPos.z then
-        lockedLevel = pos().z
-        modules.game_interface.getMapPanel():unlockVisibleFloor()
-    end
-end)
-
-onKeyPress(function(keys)
-    if m.isOn() then
-        if keys == keyDown then
-            lockedLevel = lockedLevel + 1
-            modules.game_interface.getMapPanel():lockVisibleFloor(lockedLevel)
-        elseif keys == keyUp then
-            lockedLevel = lockedLevel - 1
-            modules.game_interface.getMapPanel():lockVisibleFloor(lockedLevel)
-        end
-    end
-end)
-
--- Seguir Amigo
-storage.followLeader = storage.followLeader or "Player a Seguir"
-FollowMacro = macro(1231321321, "Seguir Amigo", function() end)
-addTextEdit("playerToFollow", storage.followLeader, function(widget, text)
-    storage.followLeader = text
-end)
-
-onCreaturePositionChange(function(creature, newPos, oldPos)
-    if FollowMacro:isOff() then return end
-    if newPos and oldPos and creature:getName() == player:getName() and getCreatureByName(storage.followLeader) == nil and newPos.z > oldPos.z then
-        print("Subir")
-        say('exani tera')
-        for i = -1, 1 do
-            for j = -1, 1 do
-                local useTile = g_map.getTile({ x = posx() + i, y = posy() + j, z = posz() })
-                if useTile then
-                    g_game.use(useTile:getTopUseThing())
-                end
-            end
-        end
-    end
-
-    if creature:getName() == storage.followLeader then
-        if not newPos then
-            if oldPos then
-                lastPos = oldPos
-                schedule(200, function()
-                    autoWalk(oldPos)
-                end)
-            end
-            schedule(1000, function()
-                for i = -1, 1 do
-                    for j = -1, 1 do
-                        local useTile = g_map.getTile({ x = posx() + i, y = posy() + j, z = posz() })
-                        if useTile then
-                            local top = useTile:getTopUseThing()
-                            if top then
-                                g_game.use(top)
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-
-        if not newPos or not oldPos then return end
-        if oldPos.z == newPos.z then
-            schedule(300, function()
-                local useTile = g_map.getTile({ x = oldPos.x, y = oldPos.y, z = oldPos.z })
-                if useTile then
-                    topThing = useTile:getTopThing()
-                    if not useTile:isWalkable() then
-                        use(topThing)
-                    end
-                end
-            end)
-            autoWalk({ x = oldPos.x, y = oldPos.y, z = oldPos.z })
-        else
-            lastPos = oldPos
-            autoWalk(oldPos)
-            for i = 1, 6 do
-                schedule(i * 200, function()
-                    autoWalk(oldPos)
-                    if getDistanceBetween(pos(), oldPos) == 0 then
-                        if posz() < newPos.z then
-                            print("Bajar")
-                            say("exani hur down")
-                        elseif posz() > newPos.z then
-                            print("Subir")
-                            say("exani tera")
-                            say("exani hur up")
-                        end
-                    end
-                end)
-            end
-            local useTile = g_map.getTile({ x = newPos.x, y = newPos.y - 1, z = oldPos.z })
-            if useTile then
-                g_game.use(useTile:getTopUseThing())
-            end
-        end
-    end
-end)
-
--- Auto Dar Party
-local palavraChave = storage.palavraChave or "lider party"
-
-UI.Label("Palabra Clave Party:")
-local palavraChaveInput = UI.TextEdit(palavraChave)
-palavraChaveInput.onTextChange = function(widget, text)
-    palavraChave = text
-    storage.palavraChave = palavraChave
+tclastExivaUI.time.text:setText(storage[panelName].timer)
+tclastExivaUI.time.text.onTextChange = function(widget, text)
+  storage[panelName].timer = tonumber(text)
 end
 
--- Macro 
-local autoParty = macro(10000, "Auto Dar Party", function() end)
-
--- funcion
-onTalk(function(name, level, mode, text, channelId, pos)
-    if autoParty:isOff() then return end
-    if player:getShield() == 4 then 
-        g_game.partyShareExperience(not player:isPartySharedExperienceActive())
-    end
-    if name == player:getName() then return end
-    if mode ~= 1 then return end
-    if string.find(text, palavraChave) then
-        local friend = getPlayerByName(name)
-        g_game.partyInvite(friend:getId())
-    end
-end)
-
-macro(1000, "Autoacepta Party",function() 
-  if player:getShield() > 2 then return end -- already in a party
-  for s, spec in pairs(getSpectators(false)) do
-    if spec:getShield() == 1 then
-      g_game.partyJoin(spec:getId())
-      delay(1000)
-    end
-  end
-end)
-
--- Invited guild
-local config = {
-    guildEmblem = 1,
-    maxDist = 5,
-    multifloor = true,
-    whiteBlueShield = 2
-}
- 
-macro(200,"Invited Party Guild",function()
-    for _, spec in ipairs(getSpectators(config.multifloor)) do
-        if spec:isPlayer() and
-        spec ~= g_game.getLocalPlayer() and 
-        spec:getEmblem() == config.guildEmblem and
-        not spec:isPartyMember() and
-        spec:getShield() ~= config.whiteBlueShield and
-        getDistanceBetween(spec:getPosition(), pos()) <= config.maxDist then
-            g_game.partyInvite(spec:getId())
-            break
-        end
-    end
-end)
-
-macro(1000, "Curar Curse / Exana Morta", function ()
-
-  if isCursed() then
-      say("exana morta")
-  end
-  return "retry"
-end)
-
-macro(2500,"Curar Condiciones", function ()
-
-  if isPoisioned() then
-      say("exana pox")
-  end
-  if isBleeding() then
-      say("exana kor")
- end
- if isBurning() then
-      say("exana flam")
- end
-  if isCursed() then
-      say("exana morta")
-  end
-  if isEnergized() then
-      say("exana vis")
-  end
-  return "retry"
-end)
-
--- Alejar de players
-macro(500, "Alejar De Players", function()
-  if not CaveBot.isOn() then return end
-
-  if getMonsters(2) > 5 then
-    TargetBot.setOn()
-  else
-    if getPlayers(6) ~= 0 then
-      TargetBot.setOff()
-    else
-      TargetBot.setOn()
-    end
-  end
-end)
-
--- Abrir la siguiente bp si esta esta vacia
-macro(1000, "Open Next BP Si Esta Vacia", function()
-  for _, c in pairs(getContainers()) do
-    if #c:getItems() == 1 then
-      local nextC = c:getItems()[1]
-      if nextC and nextC:isContainer() then
-        g_game.open(nextC)
-        return g_game.close(c)
-      end
-    end
-  end
-end)
-
--- Rainbow Nice
-local config = {
-  speed = 100
-}
-
-local s = {}
-
-s.color = {
-  first = 77, --min: 1
-  last = 94,  --max: 133
-  sets = {}
-}
-s.parts = {"head", "body", "legs", "feet"}
-s.setIndex = 1
-
-for i = s.color.first, s.color.last - 3 do
-  local set = {}
-  
-  for j = i, i + 3 do
-    table.insert(set, j)
-  end
-
-  table.insert(s.color.sets, set)
-end
-
-macro(config.speed, "Rainbow Outfit",  function()
-  s.playerOutfit = player:getOutfit()
-
-  if s.setIndex > #s.color.sets then
-    s.setIndex = 1
-  end
-
-  local currentSet = s.color.sets[s.setIndex]
-
-  for i, part in ipairs(s.parts) do
-    s.playerOutfit[part] = currentSet[i]
-  end
-
-  player:setOutfit(s.playerOutfit)
-  
-  s.setIndex = s.setIndex + 1
-end)
-
--- Rainbow arcoirirs
-local function applyShader()
-  g_game.getLocalPlayer():setOutfitShader("outfit_rainbow")
-end
-
-local function removeShader()
-  g_game.getLocalPlayer():setOutfitShader("")
-end
-
-local m_main = macro(200, "Rainbow Arcoiris", function(m)
-  applyShader()
-  schedule(200, function()
-    if m.isOff() then
-      removeShader()
-    end
-  end)
-end)
-
-onPlayerPositionChange(function(old, new)
-  if m_main.isOff() then return end
-  if old and new and old.z ~= new.z then
-      applyShader()
-  end
-end)
-
---- Camina y cambia outfit
-local s = {}
-
-s.color = {
-  first = 77, --min: 1
-  last = 94,  --max: 133
-  sets = {}
-}
-s.parts = {"head", "body", "legs", "feet"}
-s.setIndex = 1
-
-for i = s.color.first, s.color.last - 3 do
-  local set = {}
-  
-  for j = i, i + 3 do
-    table.insert(set, j)
-  end
-
-  table.insert(s.color.sets, set)
-end
-
-s.m_main = macro(10000, "Camina & Color", function(m) end)
-
-onPlayerPositionChange(function(newPos, oldPos)
-  if s.m_main.isOff() then return end
-
-  s.playerOutfit = player:getOutfit()
-
-  if s.setIndex > #s.color.sets then
-    s.setIndex = 1
-  end
-
-  local currentSet = s.color.sets[s.setIndex]
-
-  for i, part in ipairs(s.parts) do
-    s.playerOutfit[part] = currentSet[i]
-  end
-
-  setOutfit(s.playerOutfit)
-  
-  s.setIndex = s.setIndex + 1
-end)
-
--- Abrir Bp Principal
-local function openFromEmpty()
-  containers = getContainers()
-  if #containers < 1 and containers[0] == nil then
-    bpItem = getBack()
-    if bpItem ~= nil then
-      g_game.open(bpItem)
-    end
-  end
-end
-
-openFromEmpty()
-macro(500,"Abrir Bp Principal", function()
-  containers = getContainers()
-  if #containers < 1 and containers[0] == nil then
-    openFromEmpty()
-    return
-  end
-end)
-
--- Cortar ramas
-
-local config = {
-  machete = 3308,
-  hotkey = "F8",
-  WGWallId = 2130
-}
-
-function getNearTiles(pos)
-  if type(pos) ~= "table" then pos = pos:getPosition() end
-
-  local tiles = {}
-  local dirs = {
-      {-1, 1}, {0, 1}, {1, 1}, {-1, 0}, {1, 0}, {-1, -1}, {0, -1}, {1, -1}
-  }
-  for i = 1, #dirs do
-      local tile = g_map.getTile({
-          x = pos.x - dirs[i][1],
-          y = pos.y - dirs[i][2],
-          z = pos.z
-      })
-      if tile then table.insert(tiles, tile) end
-  end
-
-  return tiles
-end
-
-local Machete = macro(200, "Cortar ramas", function()
-  for _, t in ipairs(getNearTiles(pos())) do
-    local topT = t:getTopThing()
-    if topT and topT:getId() == config.WGWallId then
-      return useWith(config.machete, topT)
-    end
-  end
-end)
-
--- Crear Food
-macro(500, "Crear Food", function()
-        if player:getRegenerationTime() <= 400 then
-            cast("exevo pan")
-    end
-end)
-
--- Eat Food
-local Falcon = "Eat Food"
-local items = {7158,3578,3725,3577,3600,3731,3582,3726}
-local wait = 1 -- minutes
- 
-macro(5000, "Eat Food", function()
-  local time = 0
-  for i=1,#items do
-    local id = items[i]
-    if findItem(id) then
-      schedule(time,function()
-        g_game.use(findItem(id))
-      end)
-      time = time + 250
-    end
-  end
-  delay((wait*60*1000))
-end)
-
--- Full Addon
-macro(100, "Full Addon", function()
-    local myOutfit = player:getOutfit()
-    if myOutfit.addons ~= 3 then
-      myOutfit.addons = 3
-      player:setOutfit(myOutfit)
-    end
-  end)
-
---- Mensaje De Afk
-local privateModeId = 4
-local message = "Hola %name!, mensajeame despues, estoy ocupado horita. (AFK) "
-
-
-local m_main = macro(10000, "Auto Mensaje AFK", function() end)
+local lastExiva = ''
+lastExiva = storage[panelName].name
+tcLastExiva.lblExiva:setText('Last Exiva: ' .. lastExiva)
 
 onTalk(function(name, level, mode, text, channelId, pos)
-  if m_main.isOff() then return end
+  if name ~= player:getName() then return end
   text = text:lower()
-  if text:find("afk") then return end
-
-  if mode == privateModeId then
-    local mens = message:gsub("%%name", name)
-    talkPrivate(name, mens)
+  -- uncomment the warn below to find the channel mode if this doesn't work
+  -- cast exiva and you should see NUMBER :  exiva "name"
+  -- warn(mode.. ':'..text)
+  if (mode == 34 or mode == 44) and text:find('exiva ') then
+   lastExiva = string.match(text, [[exiva "([^"]+)]])
+    if lastExiva then
+      storage[panelName].name = lastExiva
+      tcLastExiva.lblExiva:setText('Last Exiva: ' .. lastExiva)
+    end
   end
 end)
 
--- STAR CONFIG AUTOPESCA
-local fishable_water_ids = {4597, 4598, 4599, 4600, 4601, 4602}
-local fishing_rod_id = 3483
-local maxDistance = 8
-local minCapacity = -1 -- -1 = don't stop if low cap
-local wormId = 3492 -- leave it = 0 if you dont need worm to fish
-local interval = 500 -- milliseconds
-local markFishable = true
-local markColor = "white"
--- END CONFIG
-
-local useAsHotkey = g_game.getClientVersion() > 800
-
-local fishMacro = macro(250, "Pesca Automatica", function(m)
-  local rod = useAsHotkey and fishing_rod_id or findItem(fishing_rod_id)
-  if not rod then
-    warn("[Fishing] No Tienes La Fishing Rod.")
-    return delay(5000)
-  end
-  if freecap() <= minCapacity then
-    warn("[Fishing] No Tienes Mas Capacidad.")
-    return delay(5000)
-  end
-  if wormId > 0 and itemAmount(wormId) == 0 then
-    warn("[Fishing] No Tienes Gusanos.")
-    return delay(5000)
-  end
-
-  local fishable = {}
-  local time = 0
-
-  for _, tile in ipairs(g_map.getTiles(posz())) do
-    local isFishable = table.contains(fishable_water_ids, tile:getTopUseThing():getId())
-    local isReachable = getDistanceBetween(pos(), tile:getPosition()) <= maxDistance
-    if isFishable and isReachable and tile:canShoot() then
-      table.insert(fishable,tile:getPosition())
-      if markFishable then
-        tile:getTopUseThing():setMarked(markColor)
-      end
-    end
-  end
-
-  if #fishable == 0 then
-    warn("[Fishing] No Hay Mas Peces Aqui.")
-    return delay(5000)
-  end
-
-  for p, pos in pairs(fishable) do
-    schedule(time,function()
-      if m:isOff() then return end
-      local tile = g_map.getTile(pos)
-      if tile then
-        useWith(rod,tile:getTopUseThing())
-      end
+onTextMessage(function(mode, text)
+  if mode ~= 20 then return end
+  local regex = "([a-z A-Z]*) is ([a-z -A-Z]*)(?:to the|standing|below|above) ([a-z -A-Z]*)."
+  local data = regexMatch(text, regex)[1]
+  if data and data[2] and data[3] then
+    schedule(10, function()
+      tcLastExiva.lblMessage:setText(text)
     end)
-    time = time + interval
-  end
-  
-  delay(time+interval)
-end) 
-
-fishMacro.switch:setColor("white")
-fishMacro.switch:setFont('verdana-11px-rounded')
-
--- Esperar amigos en Party
-local waitIfNotFound = false -- esperar si amigo no esta en pantalla 
-local onlyParty = true -- solo espera quien esta en party
--- STORAGE
-storage.waitFriends = storage.waitFriends or {dist = 5, text = ""}
-local config = storage.waitFriends
-local friends = {}
--- PARSE FRIENDS TEXT TO TABLE
-local function parseFriendList()
-  friends = {}
-  for _, friend in pairs(config.text:split("\n")) do
-    table.insert(friends,friend)
-  end
-end
-parseFriendList()
-
--- MACRO
-local paused = false
-macro(250,"Esperar Amigos",function()
-  local p = pos()
-  for f, friend in pairs(friends) do
-    local find = getCreatureByName(friend)
-    if (not find and waitIfNotFound) or (find and (not onlyParty or find:getShield() > 2) and getDistanceBetween(p,find:getPosition()) > config.dist) then
-      if not paused then
-        paused = true
-        delay(1000) -- tempo que vai ficar parado até começar a andar pros lados
-        return CaveBot.setOff()
-      else
-        local wait = 0
-        local step = 250 -- intervalo de cada passo
-        for i = 0, 3 do
-          schedule(wait,function()
-            walk(i)
-            schedule(wait+step,function()
-              walk((i + 2) % 4)
-            end)
-          end)
-          wait = wait + step + step
-        end
-        wait = wait + step
-        delay(wait)
-        return
-      end
-    end
-  end
-  if paused then
-    paused = false
-    CaveBot.setOn()
   end
 end)
 
--- UI
-UI.Label("Distance:")
-addTextEdit("wfDist", config.dist, function(widget, text)
-  config.dist = tonumber(text)
-end)
-UI.Button("Editar List Amigos", function(newText)
-  UI.MultilineEditorWindow(config.text or "", {title="Wait Friends List", description="Insert 1 friend in each line"},
-  function(text)
-    config.text = text
-    parseFriendList()
-  end)
-end)
-
--- macro para ignorar ciertos IDs del mapa By F.Almeida
-
-local replace_id = 2110
-local mark_color = "red"
-if not storage.avoid_items or type(storage.avoid_items) ~= "table" then
-  storage.avoid_items = {2147,2145,2148,2146}
-end
-
-local avoidMacro = macro(10*60*1000,"Evitar Trampas o Ids",function()
-end)
-
-local function parseItems(items)
-  local parse = {}
-  for e, entry in pairs(items) do
-    local id = type(entry) == 'table' and entry.id or entry
-    table.insert(parse,id)
+tclastExivaMacro = macro(1500, "Enable", function()
+  if lastExiva:len() > 0 then
+    say('exiva "' .. lastExiva)
   end
-  return parse
-end
+  delay(tonumber(storage[panelName].timer) * 1000)
+end, tclastExivaUI)
+UI.Separator(tclastExivaUI)
 
-local avoidContainer = UI.Container(function(widget, items)
-  storage.avoid_items = parseItems(items)
-end, true)
-avoidContainer:setHeight(35)
-avoidContainer:setItems(parseItems(storage.avoid_items))
-
-onAddThing(function(tile, thing)
-  if not avoidMacro:isOn() then return end
-  if thing:isItem() then
-    if not isOnTile(replace_id,tile) then
-      local oldId = thing:getId()
-      if table.find(storage.avoid_items,oldId) then
-        local item = thing
-        if thing:isGround() then
-          local create = Item.create()
-          tile:addThing(create,1)
-          item = create
-        end
-        item:setId(replace_id)
-        item:setMarked(mark_color)
-      end
-    end
-  end
-end)
-UI.Separator()
-
--- Antipush panel
+-- Pushmax
+local panelName = "pushmax"
 local ui = setupUI([[
 Panel
   height: 19
@@ -815,134 +162,575 @@ Panel
     anchors.left: parent.left
     text-align: center
     width: 130
-    !text: tr('Anti-Push Dejar On')
+    !text: tr('PUSHMAX')
 
   Button
-    id: edit
+    id: push
     anchors.top: prev.top
     anchors.left: prev.right
     anchors.right: parent.right
     margin-left: 3
     height: 17
-    text: Edit
+    text: Setup
+
 ]])
+ui:setId(panelName)
 
-local edit = setupUI([[
-Panel
-  height: 90
-    
-  Label
-    anchors.top: parent.top
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 5
-    text-align: center
-    text: Stack Items:
-
-  BotContainer
-    id: pushItems
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    height: 65
-]])
-edit:hide()
-
-if not storage.antiPush then
-    storage.antiPush = {
-      enabled = false,
-      pushItems = { 3031, 3447, 3492 },
-    }
+if not storage[panelName] then
+  storage[panelName] = {
+    enabled = true,
+    pushDelay = 1060,
+    pushMaxRuneId = 3188,
+    mwallBlockId = 2128,
+    pushMaxKey = "PageUp"
+  }
 end
 
-local config = storage.antiPush
-
-local showEdit = false
-ui.edit.onClick = function(widget)
-  showEdit = not showEdit
-  if showEdit then
-    edit:show()
-  else
-    edit:hide()
-  end
-end
+local config = storage[panelName]
 
 ui.title:setOn(config.enabled)
 ui.title.onClick = function(widget)
-  config.enabled = not config.enabled
-  ui.title:setOn(config.enabled)
-  antiPushIcon:setOn(config.enabled) -- Sincroniza el ícono con el estado del BotSwitch
+config.enabled = not config.enabled
+widget:setOn(config.enabled)
 end
 
-UI.Container(function()
-    config.pushItems = edit.pushItems:getItems()
-end, true, nil, edit.pushItems) 
-edit.pushItems:setItems(config.pushItems)
+ui.push.onClick = function(widget)
+  pushWindow:show()
+  pushWindow:raise()
+  pushWindow:focus()
+end
 
-local antiPusho = macro(500, function()
-  if not config.enabled then return end
+rootWidget = g_ui.getRootWidget()
+if rootWidget then
+  pushWindow = UI.createWindow('PushMaxWindow', rootWidget)
+  pushWindow:hide()
 
-  local pos = player:getPosition()
-  local tile = g_map.getTile(pos)
+  pushWindow.closeButton.onClick = function(widget)
+    pushWindow:hide()
+  end
 
-  if #tile:getItems() > 7 then return true end
+  local updateDelayText = function()
+    pushWindow.delayText:setText("Push Delay: ".. config.pushDelay)
+  end
+  updateDelayText()
+  pushWindow.delay.onValueChange = function(scroll, value)
+    config.pushDelay = value
+    updateDelayText()
+  end
+  pushWindow.delay:setValue(config.pushDelay)
 
-  local topItem = tile:getTopUseThing():getId()
+  pushWindow.runeId.onItemChange = function(widget)
+    config.pushMaxRuneId = widget:getItemId()
+  end
+  pushWindow.runeId:setItemId(config.pushMaxRuneId)
+  pushWindow.mwallId.onItemChange = function(widget)
+    config.mwallBlockId = widget:getItemId()
+  end
+  pushWindow.mwallId:setItemId(config.mwallBlockId)
 
-  for i, item in pairs(config.pushItems) do
-    local drop = findItem(item.id)
-    if drop and item.id ~= topItem then
-      return g_game.move(drop,pos,math.random(1, 2))
+  pushWindow.hotkey.onTextChange = function(widget, text)
+    config.pushMaxKey = text
+  end
+  pushWindow.hotkey:setText(config.pushMaxKey)
+end
+
+
+-- variables for config
+
+local config = config
+local pushDelay = tonumber(config.pushDelay)
+local rune = tonumber(config.pushMaxRuneId)
+local customMwall = config.mwallBlockId
+local key = config.pushMaxKey
+local enabled = config.enabled
+local fieldTable = {2118, 105, 2122}
+
+-- scripts 
+
+local targetTile
+local pushTarget
+local targetid
+
+local resetData = function()
+  for i, tile in pairs(g_map.getTiles(posz())) do
+    if tile:getText() == "TARGET" or tile:getText() == "DEST" then
+      tile:setText('')
+    end
+  end
+  pushTarget = nil
+  targetTile = nil
+  targetId = nil
+end
+
+local getCreatureById = function(id)
+  for i, spec in ipairs(getSpectators()) do
+    if spec:getId() == id then
+      return spec
+    end
+  end
+  return false
+end
+
+local isNotOk = function(t,tile)
+  local tileItems = {}
+
+  for i, item in pairs(tile:getItems()) do
+    table.insert(tileItems, item:getId())
+  end
+  for i, field in ipairs(t) do
+    if table.find(tileItems, field) then
+      return true
+    end
+  end
+  return false
+end
+
+local isOk = function(a,b)
+  return getDistanceBetween(a,b) == 2
+end
+
+-- to mark
+onKeyDown(function(keys)
+  if not enabled then return end
+  if keys ~= key then return end
+  local tile = getTileUnderCursor()
+  if not tile then return end
+  if pushTarget and targetTile then
+    resetData()
+    return
+  end
+  local creature = tile:getCreatures()[1]
+  if not pushTarget and creature then
+    pushTarget = creature
+    targetId = creature:getId()
+    if pushTarget then
+      tile:setText('TARGET')
+      pushTarget:setMarked('#00FF00')
+    end
+  elseif not targetTile and pushTarget then
+    if pushTarget and getDistanceBetween(tile:getPosition(),pushTarget:getPosition()) ~= 2 then
+      resetData()
+      return
+    else
+      tile:setText('DEST')
+      targetTile = tile
     end
   end
 end)
 
--- creando icono
-local function activeDrag(icon, nameMacro, position)
-  icon:breakAnchors()
-  icon:move(position.posX or 20, position.posY or 20)
+onCreaturePositionChange(function(creature, newPos, oldPos)
+  if not enabled then return end
+  if creature == player then
+    resetData()
+  end
+  if not pushTarget or not targetTile then return end
+  if creature == pushTarget and newPos == targetTile then
+    resetData()
+  end
+end)
 
-  local dobleclick = false
-  icon.onDoubleClick = function()
-    dobleclick = true
-    schedule(1500, function()
-      dobleclick = false
+macro(20, function()
+  if not enabled then return end
+  if not pushTarget or not targetTile then return end
+  tilePos = targetTile:getPosition()
+  targetPos = pushTarget:getPosition()
+  if not isOk(tilePos,targetPos) then return end
+  
+  local tileOfTarget = g_map.getTile(targetPos)
+  
+  if not targetTile:isWalkable() then
+    local topThing = targetTile:getTopUseThing():getId()
+    if topThing == 2129 or topThing == 2130 or topThing == customMwall then
+      if targetTile:getTimer() < pushDelay+500 then
+        vBot.isUsing = true
+        schedule(pushDelay+700, function()
+          vBot.isUsing = false
+        end)
+      end
+      if targetTile:getTimer() > pushDelay then
+        return
+      end
+    else
+      return resetData()
+    end
+  end
+
+  if not tileOfTarget:getTopUseThing():isNotMoveable() then
+    return useWith(rune, pushTarget)
+  end
+  if isNotOk(fieldTable, targetTile) then
+    if targetTile:canShoot() then
+      return useWith(3148, targetTile:getTopUseThing())
+    else
+      return
+    end
+  end
+    g_game.move(pushTarget,tilePos)
+    delay(2000)
+end)
+
+-- Playerlist
+local link = "https://www.gunzodus.net/character/show/"
+local spacing = "_"
+
+
+
+-- do not edit below
+setDefaultTab("Main")
+local tabs = {"Friends", "Enemies", "BlackList"}
+local panelName = "playerList"
+local colors = {"#03C04A", "#fc4c4e", "orange"}
+
+if not storage[panelName] then
+    storage[panelName] = {
+      enemyList = {},
+      friendList = {},
+      blackList = {},
+      groupMembers = true,
+      outfits = false,
+      marks = false,
+      highlight = false
+    }
+end
+
+local config = storage[panelName]
+local playerTables = {config.friendList, config.enemyList, config.blackList}
+
+-- functions
+local function clearCachedPlayers()
+  CachedFriends = {}
+  CachedEnemies = {}
+end
+
+local refreshStatus = function()
+    for _, spec in ipairs(getSpectators()) do
+      if spec:isPlayer() and not spec:isLocalPlayer() then
+        if config.outfits then
+          local specOutfit = spec:getOutfit()
+          if isFriend(spec:getName()) then
+            if config.highlight then
+              spec:setMarked('#0000FF')
+            end
+            specOutfit.head = 88
+            specOutfit.body = 88
+            specOutfit.legs = 88
+            specOutfit.feet = 88
+            if storage.BOTserver.outfit then
+              local voc = vBot.BotServerMembers[spec:getName()]
+              specOutfit.addons = 3 
+              if voc == 1 then
+                specOutfit.type = 131
+              elseif voc == 2 then
+                specOutfit.type = 129
+              elseif voc == 3 then
+                specOutfit.type = 130
+              elseif voc == 4 then
+                specOutfit.type = 144
+              end
+            end
+            spec:setOutfit(specOutfit)
+          elseif isEnemy(spec:getName()) then
+            if config.highlight then
+              spec:setMarked('#FF0000')
+            end
+            specOutfit.head = 94
+            specOutfit.body = 94
+            specOutfit.legs = 94
+            specOutfit.feet = 94
+            spec:setOutfit(specOutfit)
+          end
+        end
+      end
+    end
+end
+refreshStatus()
+
+local checkStatus = function(creature)
+    if not creature:isPlayer() or creature:isLocalPlayer() then return end
+  
+    local specName = creature:getName()
+    local specOutfit = creature:getOutfit()
+  
+    if isFriend(specName) then
+      if config.highlight then
+        creature:setMarked('#0000FF')
+      end
+      if config.outfits then
+        specOutfit.head = 88
+        specOutfit.body = 88
+        specOutfit.legs = 88
+        specOutfit.feet = 88
+        if storage.BOTserver.outfit then
+          local voc = vBot.BotServerMembers[creature:getName()]
+          specOutfit.addons = 3 
+          if voc == 1 then
+            specOutfit.type = 131
+          elseif voc == 2 then
+            specOutfit.type = 129
+          elseif voc == 3 then
+            specOutfit.type = 130
+          elseif voc == 4 then
+            specOutfit.type = 144
+          end
+        end
+        creature:setOutfit(specOutfit)
+      end
+    elseif isEnemy(specName) then
+      if config.highlight then
+        creature:setMarked('#FF0000')
+      end
+      if config.outfits then
+        specOutfit.head = 94
+        specOutfit.body = 94
+        specOutfit.legs = 94
+        specOutfit.feet = 94
+        creature:setOutfit(specOutfit)
+      end
+    end
+end
+
+
+rootWidget = g_ui.getRootWidget()
+if rootWidget then
+    local ListWindow = UI.createWindow('PlayerListWindow', rootWidget)
+    ListWindow:hide()
+
+    UI.Button("Player Lists", function() 
+        ListWindow:show()
+        ListWindow:raise()
+        ListWindow:focus()
+    end)
+
+    -- settings
+    ListWindow.settings.Members:setChecked(config.groupMembers)
+    ListWindow.settings.Members.onClick = function(widget)
+      config.groupMembers = not config.groupMembers
+      if not config.groupMembers then
+        clearCachedPlayers()
+      end
+      refreshStatus()
+      widget:setChecked(config.groupMembers)
+    end
+    ListWindow.settings.Outfit:setChecked(config.outfits)
+    ListWindow.settings.Outfit.onClick = function(widget)
+      config.outfits = not config.outfits
+      widget:setChecked(config.outfits)
+      refreshStatus()
+    end
+    ListWindow.settings.NeutralsAreEnemy:setChecked(config.marks)
+    ListWindow.settings.NeutralsAreEnemy.onClick = function(widget)
+      config.marks = not config.marks
+      widget:setChecked(config.marks)
+    end
+    ListWindow.settings.Highlight:setChecked(config.highlight)
+    ListWindow.settings.Highlight.onClick = function(widget)
+      config.highlight = not config.highlight
+      widget:setChecked(config.highlight)
+    end
+
+    ListWindow.settings.AutoAdd:setChecked(config.autoAdd)
+    ListWindow.settings.AutoAdd.onClick = function(widget)
+      config.autoAdd = not config.autoAdd
+      widget:setChecked(config.autoAdd)
+    end
+
+    local TabBar = ListWindow.tmpTabBar
+    TabBar:setContentWidget(ListWindow.tmpTabContent)
+    local blacklistList
+
+    for v = 1, 3 do
+        local listPanel = g_ui.createWidget("tPanel") -- Creates Panel
+        local playerList = playerTables[v]
+        listPanel:setId(tabs[v].."Tab")
+        TabBar:addTab(tabs[v], listPanel)
+
+        -- elements
+        local addButton = listPanel.add
+        local nameTab = listPanel.name
+        local list = listPanel.list
+        if v == 3 then
+          blacklistList = list
+        end
+
+        for i, name in ipairs(playerList) do
+            local label = UI.createWidget("PlayerLabel", list)
+            label:setText(name)
+            label.remove.onClick = function()
+                table.remove(playerList, table.find(playerList, name))
+                label:destroy()
+                clearCachedPlayers()
+                refreshStatus()
+            end
+            label.onMouseRelease = function(widget, mousePos, mouseButton)
+              if mouseButton == 2 then
+                local child = rootWidget:recursiveGetChildByPos(mousePos)
+                if child == widget then
+                  local menu = g_ui.createWidget('PopupMenu')
+                  menu:setId("blzMenu")
+                  menu:setGameMenu(true)
+                  menu:addOption('Check Player', function()
+                    local name = widget:getText():gsub(" ", spacing)
+                    g_platform.openUrl(link..name)
+                  end, "")
+                  menu:addOption('Copy Name', function()
+                    g_window.setClipboardText(widget:getText())
+                  end, "")
+                  menu:display(mousePos)
+                  return true
+                end
+              end
+            end
+        end
+
+        local tabButton = TabBar.buttonsPanel:getChildren()[v]
+
+        tabButton.onStyleApply = function(widget)
+            if TabBar:getCurrentTab() == widget then
+                widget:setColor(colors[v])
+            end 
+        end
+
+        -- callbacks
+        addButton.onClick = function()
+            local names = string.split(nameTab:getText(), ",")
+
+            if #names == 0 then
+              warn("vBot[PlayerList]: Name is missing!")
+              return
+            end
+
+            for i=1,#names do
+              local name = names[i]:trim()
+              if name:len() == 0 then
+                  warn("vBot[PlayerList]: Name is missing!")
+              else
+                  if not table.find(playerList, name) then
+                      table.insert(playerList, name)
+                      local label = UI.createWidget("PlayerLabel", list)
+                      label:setText(name)
+                      label.remove.onClick = function()
+                          table.remove(playerList, table.find(playerList, name))
+                          label:destroy()
+                      end
+                      label.onMouseRelease = function(widget, mousePos, mouseButton)
+                        if mouseButton == 2 then
+                          local child = rootWidget:recursiveGetChildByPos(mousePos)
+                          if child == widget then
+                            local menu = g_ui.createWidget('PopupMenu')
+                            menu:setId("blzMenu")
+                            menu:setGameMenu(true)
+                            menu:addOption('Check Player', function()
+                              local name = widget:getText():gsub(" ", "_")
+                              local link = "https://www.gunzodus.net/character/show/"
+                              g_platform.openUrl(link..name)
+                            end, "")
+                            menu:addOption('Copy Name', function()
+                              g_window.setClipboardText(widget:getText())
+                            end, "")
+                            menu:display(mousePos)
+                            return true
+                          end
+                        end
+                      end
+                      nameTab:setText("")
+                  else
+                      warn("vBot[PlayerList]: Player ".. name .." is already added!")
+                      nameTab:setText("")
+                  end
+                  clearCachedPlayers()
+                  refreshStatus()
+              end
+            end
+        end
+
+        nameTab.onKeyPress = function(widget, keyCode, keyboardModifiers)
+          if keyCode ~= 5 then
+            return false
+          end
+          addButton.onClick()
+          return true
+        end
+    end
+
+    function addBlackListPlayer(name)
+      if table.find(config.blackList, name) then return end
+
+      table.insert(config.blackList, name)
+      local label = UI.createWidget("PlayerLabel", blacklistList)
+      label:setText(name)
+      label.remove.onClick = function()
+          table.remove(playerList, table.find(playerList, name))
+          label:destroy()
+      end
+      label.onMouseRelease = function(widget, mousePos, mouseButton)
+        if mouseButton == 2 then
+          local child = rootWidget:recursiveGetChildByPos(mousePos)
+          if child == widget then
+            local menu = g_ui.createWidget('PopupMenu')
+            menu:setId("blzMenu")
+            menu:setGameMenu(true)
+            menu:addOption('Check Player', function()
+              local name = widget:getText():gsub(" ", "_")
+              local link = "https://www.gunzodus.net/character/show/"
+              g_platform.openUrl(link..name)
+            end, "")
+            menu:addOption('Copy Name', function()
+              g_window.setClipboardText(widget:getText())
+            end, "")
+            menu:display(mousePos)
+            return true
+          end
+        end
+      end
+    end
+end
+
+onTextMessage(function(mode,text)
+  if not config.autoAdd then return end
+  if CaveBot.isOff() or TargetBot.isOff() then return end
+  if not text:find("Warning! The murder of") then return end
+
+    text = string.split(text, "Warning! The murder of ")[1]
+    text = string.split(text, " was not justified.")[1]
+
+    addBlackListPlayer(text)
+end)
+
+onCreatureAppear(function(creature)
+    checkStatus(creature)
+  end)
+  
+onPlayerPositionChange(function(x,y)
+  if x.z ~= y.z then
+    schedule(20, function()
+      refreshStatus()
     end)
   end
-
-  icon.onDragEnter = function(widget, mousePos)
-    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
-      return false
-    end
-    icon:breakAnchors()
-    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
-    dobleclick = false
-    return true
-  end
-
-  icon.onDragMove = function(widget, mousePos, moved)
-    local parentRect = widget:getParent():getRect()
-    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
-    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
-    widget:move(x, y)
-    icon.moving = { x = icon:getX(), y = icon:getY() }
-    return true
-  end
-
-  icon.onDragLeave = function(widget, pos)
-    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
-  end
-end
-
-local antiPushoIcon = addIcon("antipusho", {item = 10818, text = "Anti Push", switchable = true, moveable = true}, function(icon, isOn)
-  antiPusho.setOn(isOn)
 end)
 
-antiPushoIcon.text:setFont('verdana-11px-rounded')
+-- Newhealer tirar sio 
+setDefaultTab("Main")
 
-activeDrag(antiPushoIcon, 'antiPusho', storage.antiPusho or {})
+-- Crea una etiqueta de UI con el texto 
+local name = UI.Label(">> CURAR * AMIGO <<")
 
--- Pickup levanta items del suelo 
+-- Define una macro que se ejecuta cada 800 milisegundos
+macro(800, function()
+  local rainbowDelay = 0 -- Inicializa el retraso del arco iris
+
+  -- Itera sobre una lista de colores
+  for k, color in ipairs({"#FFFF00", "#00FFFF", "#00FF00", "#87CEEB"}) do
+    -- Programa una funciÃ³n que cambia el color de la etiqueta despuÃ©s de un retraso
+    schedule(rainbowDelay, function()
+      name:setColor(color) -- Establece el color de la etiqueta
+    end)
+
+    -- Incrementa el retraso para el prÃ³ximo color
+    rainbowDelay = rainbowDelay + 300 -- Tiempo entre colores
+  end
+end)
+
+local panelName = "newHealer"
 local ui = setupUI([[
 Panel
   height: 19
@@ -952,8 +740,1393 @@ Panel
     anchors.top: parent.top
     anchors.left: parent.left
     text-align: center
-    width: 140
-    !text: tr('Free Items / Bag Loot')
+    width: 130
+    !text: tr('Friend Healer')
+
+  Button
+    id: edit
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    height: 17
+    text: Setup
+      
+]])
+ui:setId(panelName)
+
+-- validate current settings
+if not storage[panelName] or not storage[panelName].priorities then
+    storage[panelName] = nil
+end
+
+if not storage[panelName] then
+    storage[panelName] = {
+        enabled = false,
+        customPlayers = {},
+        vocations = {},
+        groups = {},
+        priorities = {
+
+            {name="Custom Spell",           enabled=false, custom=true},
+            {name="Exura Gran Sio",         enabled=true,              strong = true},
+            {name="Exura Sio",              enabled=true,                            normal = true},
+            {name="Exura Gran Mas Res",     enabled=true,                                          area = true},
+            {name="Health Item",            enabled=true,                                                      health=true},
+            {name="Mana Item",              enabled=true,                                                                  mana=true}
+
+        },
+        settings = {
+
+            {type="HealItem",       text="Mana Item ",                   value=268},
+            {type="HealScroll",     text="Item Range: ",                 value=6},
+            {type="HealItem",       text="Health Item ",                 value=3160},
+            {type="HealScroll",     text="Mas Res Players: ",            value=2},
+            {type="HealScroll",     text="Heal Friend at: ",             value=80},
+            {type="HealScroll",     text="Use Gran Sio at: ",            value=80},
+            {type="HealScroll",     text="Min Player HP%: ",             value=80},
+            {type="HealScroll",     text="Min Player MP%: ",             value=50},
+
+        },
+        conditions = {
+            knights = true,
+            paladins = true,
+            druids = false,
+            sorcerers = true,
+            party = true,
+            guild = false,
+            botserver = false,
+            friends = false
+        }
+    }
+end
+
+local config = storage[panelName]
+local healerWindow = UI.createWindow('FriendHealer')
+healerWindow:hide()
+healerWindow:setId(panelName)
+
+ui.title:setOn(config.enabled)
+ui.title.onClick = function(widget)
+    config.enabled = not config.enabled
+    widget:setOn(config.enabled)
+end
+
+ui.edit.onClick = function()
+    healerWindow:show()
+    healerWindow:raise()
+    healerWindow:focus()
+end
+
+local conditions = healerWindow.conditions
+local targetSettings = healerWindow.targetSettings
+local customList = healerWindow.customList
+local priority = healerWindow.priority
+
+-- customList
+-- create entries on the list
+for name, health in pairs(config.customPlayers) do
+    local widget = UI.createWidget("HealerPlayerEntry", customList.playerList.list)
+    widget.remove.onClick = function()
+        config.customPlayers[name] = nil
+        widget:destroy()
+    end
+    widget:setText("["..health.."%]  "..name)
+end
+
+customList.playerList.onDoubleClick = function()
+    customList.playerList:hide()
+end
+
+local function clearFields()
+    customList.addPanel.name:setText("friend name")
+    customList.addPanel.health:setText("1")
+    customList.playerList:show()
+end
+
+local function capitalFistLetter(str)
+    return (string.gsub(str, "^%l", string.upper))
+  end
+
+customList.addPanel.add.onClick = function()
+    local name = ""
+    local words = string.split(customList.addPanel.name:getText(), " ")
+    local health = tonumber(customList.addPanel.health:getText())
+    for i, word in ipairs(words) do
+      name = name .. " " .. capitalFistLetter(word)
+    end
+
+    if not health then    
+        clearFields()
+        return warn("[Friend Healer] Please enter health percent value!")
+    end
+
+    if name:len() == 0 or name:lower() == "friend name" then   
+        clearFields()
+        return warn("[Friend Healer] Please enter friend name to be added!")
+    end
+
+    if config.customPlayers[name] or config.customPlayers[name:lower()] then 
+        clearFields()
+        return warn("[Friend Healer] Player already added to custom list.")
+    else
+        config.customPlayers[name] = health
+        local widget = UI.createWidget("HealerPlayerEntry", customList.playerList.list)
+        widget.remove.onClick = function()
+            config.customPlayers[name] = nil
+            widget:destroy()
+        end
+        widget:setText("["..health.."%]  "..name)
+    end
+
+    clearFields()
+end
+
+local function validate(widget, category)
+    local list = widget:getParent()
+    local label = list:getParent().title
+    -- 1 - priorities | 2 - vocation
+    category = category or 0
+
+    if category == 2 and not storage.extras.checkPlayer then
+        label:setColor("#d9321f")
+        label:setTooltip("! WARNING ! \nTurn on check players in extras to use this feature!")
+        return
+    else
+        label:setColor("#dfdfdf")
+        label:setTooltip("")
+    end
+
+    local checked = false
+    for i, child in ipairs(list:getChildren()) do
+        if category == 1 and child.enabled:isChecked() or child:isChecked() then
+            checked = true
+        end
+    end
+
+    if not checked then
+        label:setColor("#d9321f")
+        label:setTooltip("! WARNING ! \nNo category selected!")
+    else
+        label:setColor("#dfdfdf")
+        label:setTooltip("")
+    end
+end
+-- targetSettings
+targetSettings.vocations.box.knights:setChecked(config.conditions.knights)
+targetSettings.vocations.box.knights.onClick = function(widget)
+    config.conditions.knights = not config.conditions.knights
+    widget:setChecked(config.conditions.knights)
+    validate(widget, 2)
+end
+
+targetSettings.vocations.box.paladins:setChecked(config.conditions.paladins)
+targetSettings.vocations.box.paladins.onClick = function(widget)
+    config.conditions.paladins = not config.conditions.paladins
+    widget:setChecked(config.conditions.paladins)
+    validate(widget, 2)
+end
+
+targetSettings.vocations.box.druids:setChecked(config.conditions.druids)
+targetSettings.vocations.box.druids.onClick = function(widget)
+    config.conditions.druids = not config.conditions.druids
+    widget:setChecked(config.conditions.druids)
+    validate(widget, 2)
+end
+
+targetSettings.vocations.box.sorcerers:setChecked(config.conditions.sorcerers)
+targetSettings.vocations.box.sorcerers.onClick = function(widget)
+    config.conditions.sorcerers = not config.conditions.sorcerers
+    widget:setChecked(config.conditions.sorcerers)
+    validate(widget, 2)
+end
+
+targetSettings.groups.box.friends:setChecked(config.conditions.friends)
+targetSettings.groups.box.friends.onClick = function(widget)
+    config.conditions.friends = not config.conditions.friends
+    widget:setChecked(config.conditions.friends)
+    validate(widget)
+end
+
+targetSettings.groups.box.party:setChecked(config.conditions.party)
+targetSettings.groups.box.party.onClick = function(widget)
+    config.conditions.party = not config.conditions.party
+    widget:setChecked(config.conditions.party)
+    validate(widget)
+end
+
+targetSettings.groups.box.guild:setChecked(config.conditions.guild)
+targetSettings.groups.box.guild.onClick = function(widget)
+    config.conditions.guild = not config.conditions.guild
+    widget:setChecked(config.conditions.guild)
+    validate(widget)
+end
+
+targetSettings.groups.box.botserver:setChecked(config.conditions.botserver)
+targetSettings.groups.box.botserver.onClick = function(widget)
+    config.conditions.botserver = not config.conditions.botserver
+    widget:setChecked(config.conditions.botserver)
+    validate(widget)
+end
+
+validate(targetSettings.vocations.box.knights)
+validate(targetSettings.groups.box.friends)
+validate(targetSettings.vocations.box.sorcerers, 2)
+
+-- conditions
+for i, setting in ipairs(config.settings) do
+    local widget = UI.createWidget(setting.type, conditions.box)
+    local text = setting.text
+    local val = setting.value
+    widget.text:setText(text)
+
+    if setting.type == "HealScroll" then
+        widget.text:setText(widget.text:getText()..val)
+        if not (text:find("Range") or text:find("Mas Res")) then
+            widget.text:setText(widget.text:getText().."%")
+        end
+        widget.scroll:setValue(val)
+        widget.scroll.onValueChange = function(scroll, value)
+            setting.value = value
+            widget.text:setText(text..value)
+            if not (text:find("Range") or text:find("Mas Res")) then
+                widget.text:setText(widget.text:getText().."%")
+            end
+        end
+        if text:find("Range") or text:find("Mas Res") then
+            widget.scroll:setMaximum(10)
+        end
+    else
+        widget.item:setItemId(val)
+        widget.item:setShowCount(false)
+        widget.item.onItemChange = function(widget)
+            setting.value = widget:getItemId()
+        end
+    end
+end
+
+
+
+-- priority and toggles
+local function setCrementalButtons()
+    for i, child in ipairs(priority.list:getChildren()) do
+        if i == 1 then
+            child.increment:disable()
+        elseif i == 6 then
+            child.decrement:disable()
+        else
+            child.increment:enable()
+            child.decrement:enable()
+        end
+    end
+end
+
+for i, action in ipairs(config.priorities) do
+    local widget = UI.createWidget("PriorityEntry", priority.list)
+
+    widget:setText(action.name)
+    widget.increment.onClick = function()
+        local index = priority.list:getChildIndex(widget)
+        local table = config.priorities
+
+        priority.list:moveChildToIndex(widget, index-1)
+        table[index], table[index-1] = table[index-1], table[index]
+        setCrementalButtons()
+    end
+    widget.decrement.onClick = function()
+        local index = priority.list:getChildIndex(widget)
+        local table = config.priorities
+
+        priority.list:moveChildToIndex(widget, index+1)
+        table[index], table[index+1] = table[index+1], table[index]
+        setCrementalButtons()
+    end
+    widget.enabled:setChecked(action.enabled)
+    widget:setColor(action.enabled and "#98BF64" or "#dfdfdf")
+    widget.enabled.onClick = function()
+        action.enabled = not action.enabled
+        widget:setColor(action.enabled and "#98BF64" or "#dfdfdf")
+        widget.enabled:setChecked(action.enabled)
+        validate(widget, 1)  
+    end
+    if action.custom then
+        widget.onDoubleClick = function()
+            local window = modules.client_textedit.show(widget, {title = "Custom Spell", description = "Enter below formula for a custom healing spell"})
+            schedule(50, function() 
+              window:raise()
+              window:focus() 
+            end)
+        end
+        widget.onTextChange = function(widget,text)
+            action.name = text
+        end
+        widget:setTooltip("Double click to set spell formula.")
+    end
+
+    if i == #config.priorities then
+        validate(widget, 1)
+        setCrementalButtons()
+    end
+end
+
+local lastItemUse = now
+local function friendHealerAction(spec, targetsInRange)
+    local name = spec:getName()
+    local health = spec:getHealthPercent()
+    local mana = spec:getManaPercent()
+    local dist = distanceFromPlayer(spec:getPosition())
+    targetsInRange = targetsInRange or 0
+
+    local masResAmount = config.settings[4].value
+    local itemRange = config.settings[2].value
+    local healItem = config.settings[3].value
+    local manaItem = config.settings[1].value
+    local normalHeal = config.customPlayers[name] or config.settings[5].value
+    local strongHeal = config.customPlayers[name] and normalHeal/2 or config.settings[6].value
+
+    for i, action in ipairs(config.priorities) do
+        if action.enabled then
+            if action.area and masResAmount <= targetsInRange and canCast("exura gran mas res") then
+                return say("exura gran mas res")
+            end
+            if action.mana and findItem(manaItem) and mana <= normalHeal and dist <= itemRange and now - lastItemUse > 1000 then
+                lastItemUse = now
+                return useWith(manaItem, spec)
+            end
+            if action.health and findItem(healItem) and health <= normalHeal and dist <= itemRange and now - lastItemUse > 1000 then
+                lastItemUse = now
+                return useWith(healItem, spec)
+            end
+            if action.strong and health <= strongHeal and not modules.game_cooldown.isCooldownIconActive(101) then
+                return say('exura gran sio "'..name)
+            end
+            if (action.normal or action.custom) and health <= normalHeal and canCast('exura sio "'..name) then
+                return say('exura sio "'..name)
+            end
+        end
+    end
+end
+
+local function isCandidate(spec)
+    if spec:isLocalPlayer() or not spec:isPlayer() then 
+        return nil 
+    end
+    if not spec:canShoot() then
+        return false
+    end
+    
+    local curHp = spec:getHealthPercent()
+    if curHp == 100 or (config.customPlayers[name] and curHp > config.customPlayers[name]) then
+        return false
+    end
+
+    local specText = spec:getText()
+    local name = spec:getName()
+    -- check players is enabled and spectator already verified
+    if storage.extras.checkPlayer and specText:len() > 0 then
+        if specText:find("EK") and not config.conditions.knights or
+           specText:find("RP") and not config.conditions.paladins or
+           specText:find("ED") and not config.conditions.druids or
+           specText:find("MS") and not config.conditions.sorcerers then
+           if not config.customPlayers[name] then
+               return nil
+           end
+        end
+    end
+
+    local okParty = config.conditions.party and spec:isPartyMember()
+    local okFriend = config.conditions.friends and isFriend(spec)
+    local okGuild = config.conditions.guild and spec:getEmblem() == 1
+    local okBotServer = config.conditions.botserver and vBot.BotServerMembers[spec:getName()]
+
+    if not (okParty or okFriend or okGuild or okBotServer) then
+        return nil
+    end
+
+    local health = config.customPlayers[name] and curHp/2 or curHp
+    local dist = distanceFromPlayer(spec:getPosition())
+
+    return health, dist
+end
+
+macro(100, function()
+    if not config.enabled then return end
+    if modules.game_cooldown.isGroupCooldownIconActive(2) then return end
+
+    local minHp = config.settings[7].value
+    local minMp = config.settings[8].value
+
+    local healTarget = {creature=nil, hp=100}
+    local inMasResRange = 0
+
+    -- check basic 
+    if hppercent() <= minHp or manapercent() <= minMp then return end
+
+    -- get all spectators
+    local spectators = getSpectators()
+
+    -- main check
+    local healtR
+    for i, spec in ipairs(spectators) do
+        local health, dist = isCandidate(spec)
+        --mas san
+        if dist then
+            inMasResRange = dist <= 3 and inMasResRange+1 or inMasResRange
+
+            -- best target
+            if health < healTarget.hp then
+                healTarget = {creature = spec, hp = health}
+            end
+        end
+    end
+
+    -- action
+    if healTarget.creature then
+        return friendHealerAction(healTarget.creature, inMasResRange)
+    end
+end)
+
+-- ItemCounter
+local panelName = "ItemCounter"
+if not storage[panelName] then
+    storage[panelName] = {}
+end
+local config = storage[panelName]
+
+g_ui.loadUIFromString([[
+
+ItemCounterItem < Panel
+  height: 40
+
+  BotItem
+    id: item
+    anchors.left: parent.left
+    anchors.top: parent.top
+  
+  UIWidget
+    id: text
+    margin-left:35
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    anchors.top: parent.top
+
+ItemCounterWindow < MainWindow
+  !text: tr('Items Counter')
+  size: 500 470
+  @onEscape: self:hide()
+
+  VerticalScrollBar
+    id: contentScroll
+    anchors.top: parent.top
+    margin-top: 3
+    anchors.right: parent.right
+    anchors.bottom: parent.top
+    step: 28
+    pixels-scroll: true
+    margin-top: 5
+    margin-bottom: 5
+
+  ScrollablePanel
+    id: content
+    anchors.top: prev.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: separator.top
+    vertical-scrollbar: contentScroll
+    margin-bottom: 10
+
+    Panel
+      id: panel1
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    Panel
+      id: panel2
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left:100
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    Panel
+      id: panel3
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left:200
+      layout:
+        type: verticalBox
+        fit-children: true
+
+    Panel
+      id: panel4
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left:300
+      layout:
+        type: verticalBox
+        fit-children: true
+
+  HorizontalSeparator
+    id: separator
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8    
+
+  Button
+    id: closeButton
+    !text: tr('Close')
+    font: cipsoftFont
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+]])
+
+local rootWidget = g_ui.getRootWidget()
+local itemList = nil
+if rootWidget then
+    ItemCounterWindow = UI.createWindow('ItemCounterWindow', rootWidget)
+
+    ItemCounterWindow:hide()
+
+    ItemCounterWindow.onGeometryChange = function(widget, old, new)
+        if old.height == 0 then return end
+        config.height = new.height
+    end
+
+    addButton("","Item Counter", function()
+      ItemCounterWindow:show()
+      ItemCounterWindow:raise()
+      ItemCounterWindow:focus()
+    end):setColor("#03fcf4")
+    
+    local firstPage = 100
+    local lastPage = 50000
+    local pageSize = 50
+    local currentPage = firstPage
+
+    ItemCounterWindow.closeButton.onClick = function(widget)
+        ItemCounterWindow:hide()
+    end
+
+end
+
+local containerItemStack = {}
+local result = {}
+
+local printMessage = function(mens)
+  modules.game_textmessage.displayGameMessage(mens)
+end
+
+local addItemCount = function(id, title, defaultItem, dest)
+  local widget = UI.createWidget('ItemCounterItem', dest)
+  widget:setId(id.."ïtemId")
+  widget.text:setText(title)
+  widget.item:setItemId(defaultItem)
+end
+
+local dests = {
+  ItemCounterWindow.content.panel1,
+  ItemCounterWindow.content.panel2,
+  ItemCounterWindow.content.panel3,
+  ItemCounterWindow.content.panel4,
+}
+
+local destIndex = 0
+
+local getDest = function()
+  destIndex = destIndex + 1
+
+  if destIndex > 4 then
+    destIndex = 1
+  end
+  
+  return  dests[destIndex]
+end
+
+local closeAll = function()
+  for _, container in pairs(getContainers()) do
+    g_game.close(container)
+  end
+end
+
+local openBack = function()
+  if getBack() then 
+    g_game.open(getBack()) 
+  end
+end
+
+local getMainBPId = function()
+  return getBack():getId()
+end
+
+local isBackOpen = function()
+  for _, container in pairs(getContainers()) do
+    local cItem = container:getContainerItem()
+    if cItem:getId() == getMainBPId() then
+      return true
+    end
+  end
+  return false
+end
+
+local isBack = function(container)
+  return container:getContainerItem():getId() == getMainBPId()
+end
+
+local pushContainer = function(containerItem)
+   table.insert(containerItemStack, containerItem)
+end
+
+local popContainer = function()
+   table.remove(containerItemStack, 1)
+end
+
+local openNext = function()
+  local cItem = containerItemStack[1]
+  if cItem then
+    popContainer()
+    g_game.open(cItem)
+    schedule(250, function()
+      cItem.isChecked = true
+    end)
+    return true
+  else
+    return false
+  end
+end
+
+local closeCheckedContainers = function()
+  for _, container in pairs(getContainers()) do
+    if not isBack(container) then
+      local canClose = true
+      for __, item in ipairs(container:getItems()) do
+        if item:isContainer() and not item.isChecked then
+          canClose = false
+        end
+      end
+      if canClose then
+        g_game.close(container)
+      end
+    end
+  end
+end
+
+local addContainersToStack = function()
+  for _, container in pairs(getContainers()) do
+      for __, item in ipairs(container:getItems()) do
+        if item:isContainer() and not item.isAdded then
+          item.isAdded = true
+          pushContainer(item)
+        end
+      end   
+  end
+end
+
+local allChecked = function()
+  for _, container in pairs(getContainers()) do
+    if not isBack(container) then
+      for __, item in ipairs(container:getItems()) do
+        if item:isContainer() and not item.isChecked then
+          return false
+        end
+      end
+    end
+  end
+  return true
+end
+
+local finished = function() 
+  return #containerItemStack == 0 and allChecked()
+end
+
+local addResult = function(container)
+  for __, item in ipairs(container:getItems()) do
+    local itemId = item:getId()
+    if not result[itemId] then
+      result[itemId] = item:getCount()
+    else
+      result[itemId] = result[itemId] + item:getCount()
+    end
+  end
+end
+
+local setResult = function()
+  local tkeys = {}
+
+  for k in pairs(result) 
+    do table.insert(tkeys, k) 
+  end
+
+  table.sort(tkeys)
+  
+  for _,id in pairs(tkeys) do
+    local count = result[id]
+    addItemCount(id, count, id, getDest())
+  end
+end
+
+local showResult = function()
+  schedule(1000, function()
+    ItemCounterWindow:show()
+    ItemCounterWindow:raise()
+    ItemCounterWindow:focus()
+  end)
+end
+
+local clearResult = function()
+  result = {}
+  ItemCounterWindow:hide()
+  for i=1, 4 do
+    getDest():destroyChildren()
+  end
+end
+
+local _delay = 1000
+local fDelay = _delay + (g_game.getPing() or 250)
+local resetContainers = false
+local m_main = macro(fDelay, "Check Containers Items", function(m)
+  if not resetContainers then
+    clearResult()
+    resetContainers = true
+    closeAll()
+    return openBack()
+  end
+
+  closeCheckedContainers()
+  addContainersToStack()
+  
+  if openNext() then return end
+
+  if finished() then
+    closeAll()
+    setResult()
+    printMessage("Finished Counting!")
+    showResult()
+    resetContainers = false
+    destIndex = 0
+    m.setOff()
+  end
+end)
+
+onContainerOpen(function(container, previousContainer)
+  if m_main.isOn() and container then
+    container.window:setHeight(55)
+    addResult(container)
+  end
+end)
+
+-- KillCounter
+UI.Label("Kill Counter Monster")
+readJson = function(filePath, callback)
+    if g_resources.fileExists(filePath) then
+        local status, result = pcall(function()
+            return json.decode(g_resources.readFileContents(filePath))
+        end)
+        if not status then
+            return onError("Erro carregando arquivo (" .. filePath .. "). Para consertar o problema, exclua o arquivo. Detalhes: " .. result)
+        end
+
+        callback(result);
+    end
+end
+
+saveKills = function(configFile, content)
+    local status, result = pcall(function()
+        return json.encode(content, 2)
+    end);
+
+    if not status then
+        return onError("Erro salvando configuração. Detalhes: " .. result);
+    end
+
+    if result:len() > 100 * 1024 * 1024 then
+        return onError("Arquivo de configuração acima de 100MB, não será salvo.");
+    end
+
+    g_resources.writeFileContents(configFile, result);
+end
+
+MAIN_DIRECTORY = "/bot/" .. modules.game_bot.contentsPanel.config:getCurrentOption().text .. "/storage/"
+STORAGE_DIRECTORY = MAIN_DIRECTORY .. "monstercounter" .. '.json'
+storageMonsters = { kills = {}; }
+
+if not g_resources.directoryExists(MAIN_DIRECTORY) then
+    g_resources.makeDir(MAIN_DIRECTORY);
+end
+
+readJson(STORAGE_DIRECTORY, function(result)
+    storageMonsters = result;
+    if (type(storageMonsters.kills) ~= 'table') then
+        storageMonsters.kills = {};
+    end
+end);
+
+
+local mkPanelname = "monsterKill"
+if not storage[mkPanelname] then storage[mkPanelname] = { min = false } end
+
+local monsterKill = setupUI([[
+Panel
+  margin-top:2
+  height: 130
+
+  Button
+    id: resetList
+    anchors.left: parent.left
+    anchors.top: parent.top
+    width: 20
+    height: 17
+    margin-top: 2
+    margin-left: 3
+    text: !
+    color: red
+    tooltip: Reset Data
+
+  Button
+    id: showList
+    anchors.right: parent.right
+    anchors.top: parent.top
+    width: 20
+    height: 17
+    margin-top: 2
+    margin-right: 3
+    text: -
+    color: red
+
+  BotTextEdit
+    id: filter
+    text-align: center
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.top: parent.top
+    height: 20
+    width: 100
+    editable: true
+    max-length: 255
+
+  ScrollablePanel
+    id: content
+    image-source: /images/ui/menubox
+    image-border: 4
+    image-border-top: 17
+    anchors.top: showList.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 5
+    height: 88
+    padding: 3
+    vertical-scrollbar: mkScroll
+    layout:
+      type: verticalBox
+
+  BotSmallScrollBar
+    id: mkScroll
+    anchors.top: content.top
+    anchors.bottom: content.bottom
+    anchors.right: content.right
+    margin-top: 2
+    margin-bottom: 5
+    margin-right: 5
+  
+  ]], parent)
+monsterKill:setId(mkPanelname)
+
+local lbls = {};
+
+local function toggleWin(load)
+    if load then
+        monsterKill:setHeight(20)
+        monsterKill.showList:setText("+")
+        monsterKill.showList:setColor("green")
+    else
+        monsterKill:setHeight(115)
+        monsterKill.showList:setText("-")
+        monsterKill.showList:setColor("red")
+    end
+end
+
+function refreshMK()
+    local searchText = monsterKill.filter:getText():lower();
+    if #lbls > 0 and (#storageMonsters.kills == #lbls) then
+        local i = 1;
+        for k, v in pairs(storageMonsters.kills) do
+            if searchText == "" or k:lower():find(searchText, 1, true) then
+                lbls[i].name:setText(k .. ':')
+                lbls[i].count:setText("x"..v)
+                i = i + 1;
+            end
+        end
+    else
+        for _, child in pairs(monsterKill.content:getChildren()) do
+            child:destroy();
+        end
+        local i = 1;
+        for k, v in pairs(storageMonsters.kills) do
+            if searchText == "" or k:lower():find(searchText, 1, true) then
+                lbls[k] = g_ui.loadUIFromString([[
+Panel
+  height: 16
+  margin-left: 2
+
+  Label
+    id: name
+    text:
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 2
+    text-auto-resize: true
+
+  Label
+    id: count
+    text:
+    anchors.top: name.top
+    anchors.right: parent.right
+    margin-right: 18
+    text-auto-resize: true
+    color: orange
+
+]], monsterKill.content)
+
+                if lbls[k] then
+                    lbls[k].name:setText(k .. ':')
+                    lbls[k].count:setText("x"..v)
+                end
+                monsterKill.resetList.onClick = function(widget)
+                    storageMonsters.kills[k] = nil;
+                    saveKills(STORAGE_DIRECTORY, storageMonsters)
+                    refreshMK()
+                end
+                monsterKill.resetList.onDoubleClick = function(widget)
+                    storageMonsters.kills = {};
+                    saveKills(STORAGE_DIRECTORY, storageMonsters)
+                    refreshMK()
+                end
+                i = i + 1;
+            end
+        end
+    end
+end
+
+
+function getKills(mobName)
+    if storageMonsters.kills[mobName] then
+        return storageMonsters.kills[mobName];
+    end
+    return 0;
+end
+
+function checkKillOnCreature(creature)
+    local creatureName = creature:getName();
+    if storageMonsters.kills[creatureName] then
+        storageMonsters.kills[creatureName] = storageMonsters.kills[creatureName] + 1;
+    else
+        storageMonsters.kills[creatureName] = 1;
+    end
+    refreshMK();
+    saveKills(STORAGE_DIRECTORY, storageMonsters);
+end
+
+refreshMK();
+toggleWin(storage[mkPanelname].min);
+
+monsterKill.showList.onClick = function(widget)
+    storage[mkPanelname].min = (monsterKill:getHeight() == 115)
+    toggleWin(storage[mkPanelname].min)
+end
+
+monsterKill.filter.onTextChange = function(widget)
+    refreshMK();
+end
+
+onCreatureHealthPercentChange(function(creature, percent)
+    if (not creature:isMonster()) then return; end
+    if creature:getHealthPercent() <= 0 and g_game.getAttackingCreature() == creature then
+        checkKillOnCreature(creature)
+    end
+end);
+UI.Separator()
+
+-- Npc Talk task
+macro(5000," Npc Task", function()
+  NPC.say("hi")
+  schedule(2000, function()
+    NPC.say("task")
+    schedule(2000, function()
+  NPC.say("custom")
+  schedule(2000, function()
+    NPC.say("long")
+    schedule(2000, function()
+    NPC.say("yes")
+    schedule(2000, function()
+      end)
+    end)
+   end)
+  end)
+ end)
+end)
+
+-- muestra exp y skills
+local panelNombre = "tcSkills"
+local panelHud = setupUI([[
+OutlineLabel < Label
+  height: 25
+  background-color: #00000044
+  opacity: 0.89
+  text-auto-resize: true
+  font: verdana-11px-rounded
+  anchors.left: parent.left
+  $first:
+    anchors.top: parent.top
+  $!first:
+    anchors.top: prev.bottom
+
+Panel
+  id: panelHabilidad
+  height: 200
+  width: 150
+  anchors.left: parent.left
+  anchors.bottom: parent.bottom
+  margin-bottom: 40
+  margin-left: 5
+]], modules.game_interface.getMapPanel())
+
+function valorConComas(cantidad)
+  local formateado = cantidad
+  while true do  
+    formateado, cambios = string.gsub(formateado, "^(-?%d+)(%d%d%d)", '%1,%2')
+    if (cambios == 0) then
+      break
+    end
+  end
+  return formateado
+end
+
+local expPorHora = 0
+local siguienteNivelEn = "00h:00m"
+
+function actualizarExpPorHora()
+  if player.expSpeed ~= nil then
+    local expPorHoraCalculado = math.floor(player.expSpeed * 3600)
+    if expPorHoraCalculado > 0 then
+      expPorHora = valorConComas(expPorHoraCalculado)
+    end
+  end
+end
+
+function mostrarExpPorHora()
+  local etiqueta = panelHud[1] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(1)
+
+  etiqueta:setColoredText({
+    'Exp/h: ', 'white',
+    expPorHora, 'green',
+    ' x Hora', 'orange',
+    siguienteNivelEn
+  })
+end
+
+function calcularStamina()
+  local stam = stamina()
+  local horas = math.floor(stam / 60)
+  local minutos = stam % 60
+  if minutos < 10 then
+    minutos = '0' .. minutos
+  end
+  local porcentaje = math.floor(100 * stam / (42 * 60))
+  return horas.. ':'.. minutos, ' ('..porcentaje..'%)'
+end
+
+function mostrarStamina()
+  local etiqueta = panelHud[2] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(2)
+  local horas, porcentaje = calcularStamina()
+
+  etiqueta:setColoredText({
+    'Stamina: ', 'white',
+    horas, 'green',
+    porcentaje, 'white'
+  })
+end
+
+function mostrarNivel()
+  local etiqueta = panelHud[3] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(3)
+
+  local porcentajeActual = player:getLevelPercent()
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Nivel: ', 'white',
+    level(), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
+DISTANCIA = 4
+function mostrarDistancia()
+  local etiqueta = panelHud[4] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(4)
+
+  local porcentajeActual = player:getSkillLevelPercent(DISTANCIA)
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Distancia: ', 'white',
+    player:getSkillLevel(DISTANCIA), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
+SHIELD = 5
+function mostrarShield()
+  local etiqueta = panelHud[5] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(5)
+
+  local porcentajeActual = player:getSkillLevelPercent(SHIELD)
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Shield: ', 'white',
+    player:getSkillLevel(SHIELD), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
+function mostrarMagicLevel()
+  local etiqueta = panelHud[6] or UI.createWidget("OutlineLabel", panelHud)
+  etiqueta:setId(6)
+
+  local porcentajeActual = player:getMagicLevelPercent()
+  local porcentajeFaltante = 100 - porcentajeActual
+
+  etiqueta:setColoredText({
+    'Magic Lvl: ', 'white',
+    player:getMagicLevel(), 'green',
+    '', porcentajeActual, ' (', 'orange', porcentajeFaltante, '%)', '%)', 'orange'
+  })
+end
+
+local checarExpPorHora = macro(5000, 'Muestra Exp Y Skills', function()
+  actualizarExpPorHora()
+  mostrarExpPorHora()
+  mostrarStamina()
+  mostrarNivel()
+  mostrarDistancia()
+  mostrarShield()
+  mostrarMagicLevel()
+end)
+
+panelHud:breakAnchors() --editado por Madgenius
+panelHud:move(840, 240) -- Ajusta la posicion del panel HUD cambiando estos valores
+
+function inicializar()
+  actualizarExpPorHora()
+  mostrarExpPorHora()
+  mostrarStamina()
+  mostrarNivel()
+  mostrarDistancia()
+  mostrarShield()
+  mostrarMagicLevel()
+end
+
+inicializar()
+
+-- Zoom Mapa
+local tcgameMapUI = setupUI([[
+Panel
+  margin: 3
+  height: 72
+  layout:
+    type: verticalBox
+
+  Label
+    id: title
+    text: Zoom Mapa
+    margin-top: 3
+    text-align: center
+    font: verdana-11px-rounded
+
+  Panel
+    id: buttons
+    margin-left: 5
+    layout:
+      type: grid
+      cell-size: 52 16
+      cell-spacing: 4
+      num-columns: 3
+
+    margin-top: 6
+    height: 20
+    Button
+      id: plus
+      font: verdana-11px-rounded
+      !text: '+1'
+
+    Button
+      id: minus
+      font: verdana-11px-rounded
+      !text: '-1'
+
+    Button
+      id: twelve
+      font: verdana-11px-rounded
+      !text: '12'
+
+  Button
+    id: reset
+    height: 17
+    font: verdana-11px-rounded
+    !text: 'reset'
+    color: red
+    margin-left: 3
+    margin-right: 3
+
+  ]], parent)
+local gameMapPanel = modules.game_interface.getMapPanel()
+tcgameMapUI.buttons.plus.onClick = function()
+  gameMapPanel:zoomIn()
+end
+tcgameMapUI.buttons.minus.onClick = function()
+  gameMapPanel:zoomOut()
+end
+tcgameMapUI.buttons.twelve.onClick = function()
+  gameMapPanel:setZoom(12)
+end
+
+tcgameMapUI.reset.onClick = function()
+  gameMapPanel:setZoom(11)
+end
+
+-- usar stamina
+UI.Label("Usar Stamina")
+
+function staminaItems(parent)
+  if not parent then
+    parent = panel
+  end
+  local panelName = "staminaItemsUser"
+  local ui = setupUI([[
+Panel
+  height: 65
+  margin-top: 2
+
+  SmallBotSwitch
+    id: title
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-align: center
+
+  HorizontalScrollBar
+    id: scroll1
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    anchors.top: title.bottom
+    margin-right: 2
+    margin-top: 2
+    minimum: 0
+    maximum: 42
+    step: 1
+    
+  HorizontalScrollBar
+    id: scroll2
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.top: prev.top
+    margin-left: 2
+    minimum: 0
+    maximum: 42
+    step: 1    
+
+  ItemsRow
+    id: items
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+  ]], parent)
+  ui:setId(panelName)
+
+  if not storage[panelName] then
+    storage[panelName] = {
+      min = 25,
+      max = 40,
+    }
+  end
+
+  local updateText = function()
+    ui.title:setText("" .. storage[panelName].min .. " <= stamina >= " .. storage[panelName].max .. "")  
+  end
+ 
+  ui.scroll1.onValueChange = function(scroll, value)
+    storage[panelName].min = value
+    updateText()
+  end
+  ui.scroll2.onValueChange = function(scroll, value)
+    storage[panelName].max = value
+    updateText()
+  end
+ 
+  ui.scroll1:setValue(storage[panelName].min)
+  ui.scroll2:setValue(storage[panelName].max)
+ 
+  ui.title:setOn(storage[panelName].enabled)
+  ui.title.onClick = function(widget)
+    storage[panelName].enabled = not storage[panelName].enabled
+    widget:setOn(storage[panelName].enabled)
+  end
+ 
+  if type(storage[panelName].items) ~= 'table' then
+    storage[panelName].items = { 11588 }
+  end
+ 
+  for i=1,5 do
+    ui.items:getChildByIndex(i).onItemChange = function(widget)
+      storage[panelName].items[i] = widget:getItemId()
+    end
+    ui.items:getChildByIndex(i):setItemId(storage[panelName].items[i])    
+  end
+ 
+  macro(500, function()
+    if not storage[panelName].enabled or stamina() / 60 < storage[panelName].min or stamina() / 60 > storage[panelName].max then
+      return
+    end
+    local candidates = {}
+    for i, item in pairs(storage[panelName].items) do
+      if item >= 100 then
+        table.insert(candidates, item)
+      end
+    end
+    if #candidates == 0 then
+      return
+    end    
+    use(candidates[math.random(1, #candidates)])
+  end)
+end
+staminaItems()
+
+-- Dropper items
+local ui = setupUI([[
+Panel
+  height: 19
+
+  BotSwitch
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-align: center
+    width: 130
+    !text: tr('Tirar Items')
 
   Button
     id: edit
@@ -967,86 +2140,22 @@ Panel
 
 local edit = setupUI([[
 Panel
-  height: 255
-
+  height: 150
+    
   Label
     anchors.top: parent.top
     anchors.left: parent.left
-    margin-top: 5
-    text-align: center
-    width: 120
-    text: Max Distance:
-    height: 17
-
-  SpinBox
-    id: maxPos
-    height: 17
-    anchors.top: prev.top
-    anchors.left: prev.right
-    anchors.right: parent.right
-    margin-left: 3
-    minimum: 1
-    maximum: 5
-    step: 1
-    editable: true
-    text-align: center
-
-  Label
-    anchors.top: prev.bottom
-    margin-top: 5
-    anchors.left: parent.left
-    margin-top: 5
-    text-align: center
-    width: 120
-    text: Min Capacity:
-    height: 17
-
-  BotTextEdit
-    id: minCap
-    height: 17
-    anchors.top: prev.top
-    anchors.left: prev.right
-    anchors.right: parent.right
-    margin-left: 3
-    editable: true
-    text-align: center
-    text: 0.1
-
-  Label
-    anchors.top: prev.bottom
-    margin-top: 5
-    anchors.left: parent.left
-    margin-top: 5
-    text-align: center
-    width: 120
-    text: Move Delay:
-    height: 17
-
-  BotTextEdit
-    id: moveDelay
-    height: 17
-    anchors.top: prev.top
-    anchors.left: prev.right
-    anchors.right: parent.right
-    margin-left: 3
-    editable: true
-    text-align: center
-    text: 0.1
-    
-  Label
-    anchors.top: prev.bottom
-    anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 5
     text-align: center
-    text: Items to Pick Up:
+    text: Trash:
 
   BotContainer
-    id: freeItems
+    id: TrashItems
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 35
+    height: 32
 
   Label
     anchors.top: prev.bottom
@@ -1054,80 +2163,42 @@ Panel
     anchors.left: parent.left
     anchors.right: parent.right
     text-align: center
-    text: Containers to Fill:
+    text: Use:
 
   BotContainer
-    id: freeContainers
+    id: UseItems
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 35
+    height: 32
 
-  BotSwitch
-    id: moveBag
+  Label
     anchors.top: prev.bottom
+    margin-top: 5
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 17
-    text: Move Bag Loot
-    tooltip: Auto move container to your feet    
-  
-  BotSwitch
-    id: openNext
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    height: 17
-    text: Open Next Container
-    tooltip: Auto open next container if container is full
+    text-align: center
+    text: Drop if below 150 cap:
 
-  BotSwitch
-    id: reopen
+  BotContainer
+    id: CapItems
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    height: 17
-    text: ReOpen Container
-    tooltip: Auto re-open container if its not opened yet
-
-  BotSwitch
-    id: moveTrash
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    height: 17
-    text: Throw Trash Away
-    tooltip: Auto move trash away to continue looting
-
-  BotSwitch
-    id: moveOne
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    height: 17
-    text: Slow Move Items
-    tooltip: Turn it on if you are having problems with the moving speed
+    height: 32   
 ]])
 edit:hide()
 
-if not storage.freeLoot then
-    storage.freeLoot = {
+if not storage.dropper then
+    storage.dropper = {
       enabled = false,
-      maxPos = 1,
-      minCap = "0.1",
-      moveDelay = "300",
-      openNext = true,
-      moveBag = true,
-      moveTrash = true,
-      moveOne = false,
-      reopen = true,
-      freeItems = { 3031, 3035, 3043 },
-      freeContainers = {}
+      trashItems = { 283, 284, 285 },
+      useItems = { 21203, 14758 },
+      capItems = { 21175 }
     }
 end
 
-local config = storage.freeLoot
-config.moveDelay = config.moveDelay or "300"
+local config = storage.dropper
 
 local showEdit = false
 ui.edit.onClick = function(widget)
@@ -1145,368 +2216,1336 @@ ui.title.onClick = function(widget)
   ui.title:setOn(config.enabled)
 end
 
-edit.openNext:setOn(config.openNext)
-edit.openNext.onClick = function(widget)
-  config.openNext = not config.openNext
-  edit.openNext:setOn(config.openNext)
+UI.Container(function()
+    config.trashItems = edit.TrashItems:getItems()
+    end, true, nil, edit.TrashItems) 
+edit.TrashItems:setItems(config.trashItems)
+
+UI.Container(function()
+    config.useItems = edit.UseItems:getItems()
+    end, true, nil, edit.UseItems) 
+edit.UseItems:setItems(config.useItems)
+
+UI.Container(function()
+    config.capItems = edit.CapItems:getItems()
+    end, true, nil, edit.CapItems) 
+edit.CapItems:setItems(config.capItems)
+
+local function properTable(t)
+    local r = {}
+  
+    for _, entry in pairs(t) do
+      table.insert(r, entry.id)
+    end
+    return r
 end
 
-edit.reopen:setOn(config.reopen)
-edit.reopen.onClick = function(widget)
-  config.reopen = not config.reopen
-  edit.reopen:setOn(config.reopen)
+macro(200, function()
+    if not config.enabled then return end
+    local tables = {properTable(config.capItems), properTable(config.useItems), properTable(config.trashItems)}
+
+    local containers = getContainers()
+    for i=1,3 do
+        for _, container in pairs(containers) do
+            for __, item in ipairs(container:getItems()) do
+                for ___, userItem in ipairs(tables[i]) do
+                    if item:getId() == userItem then
+                        return i == 1 and freecap() < 150 and g_game.move(item, pos(), item:getCount()) or
+                               i == 2 and use(item) or
+                               g_game.move(item, pos(), item:getCount())
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Use Doors
+local macroName = 'Use Doors';
+local macroDelay = 1000;
+
+if not storage.doorIds then
+  storage.doorIds = { 5129, 5102, 5111, 5120, 11246 }
 end
 
-edit.moveBag:setOn(config.moveBag)
-edit.moveBag.onClick = function(widget)
-  config.moveBag = not config.moveBag
-  edit.moveBag:setOn(config.moveBag)
-end
-
-edit.moveTrash:setOn(config.moveTrash)
-edit.moveTrash.onClick = function(widget)
-  config.moveTrash = not config.moveTrash
-  edit.moveTrash:setOn(config.moveTrash)
-end
-
-edit.moveOne:setOn(config.moveOne)
-edit.moveOne.onClick = function(widget)
-  config.moveOne = not config.moveOne
-  edit.moveOne:setOn(config.moveOne)
-end
-
-edit.maxPos:setValue(config.maxPos)
-edit.maxPos.onValueChange = function(widget, value)
-  config.maxPos = value
-end
-
-edit.minCap:setText(config.minCap)
-edit.minCap.onTextChange = function(widget, text)
-  config.minCap = text
-end
-
-edit.moveDelay:setText(config.moveDelay)
-edit.moveDelay.onTextChange = function(widget, text)
-  config.moveDelay = text
-end
+local moveTime = 2000     -- Wait time between Move, 2000 milliseconds = 2 seconds
+local moveDist = 1        -- How far to Walk
+local useTime = 500     -- Wait time between Use, 2000 milliseconds = 2 seconds
+local useDistance = 1    -- How far to Use
 
 local function properTable(t)
   local r = {}
-  if #t == 0 then return r end
   for _, entry in pairs(t) do
-    if type(entry) == 'number' then
-      table.insert(r, entry)
-    else
       table.insert(r, entry.id)
-    end
   end
   return r
 end
 
-UI.Container(function()
-  config.freeItems = properTable(edit.freeItems:getItems())
-end, true, nil, edit.freeItems) 
-edit.freeItems:setItems(config.freeItems)
-config.freeItems = properTable(edit.freeItems:getItems())
+UI.Label("Open Doors IDs", tabName)
 
-UI.Container(function()
-  config.freeContainers = properTable(edit.freeContainers:getItems())
-end, true, nil, edit.freeContainers) 
-edit.freeContainers:setItems(config.freeContainers)
-config.freeContainers = properTable(edit.freeContainers:getItems())
+local doorContainer = UI.Container(function(widget, items)
+  storage.doorIds = items
+  doorId = properTable(storage.doorIds)
+end, tabName)
 
-local delay = now
+doorContainer:setHeight(35)
+doorContainer:setItems(storage.doorIds)
+doorId = properTable(storage.doorIds)
 
--- check destination and reopen container
--- "open next container" "auto reopen"
-local dest = nil
-macro(100,function()
-  if not config.enabled or dest or delay > now then return end
-
-  if #config.freeContainers < 1 then
-    warn("[FreeItems]: You must set up\ncontainers to pick up items.")
-    delay = now + 5000
-    return
-  end
-
-  -- search for a destination in opened containers
-  local containers = g_game.getContainers()
-  for _, cont in pairs(containers) do
-    local cName = cont:getName():lower()
-    if table.find(config.freeContainers, cont:getContainerItem():getId()) then
-      if cont:getCapacity() > #cont:getItems() then
-        dest = cont
-        return
-        -- container is full, open next?
-      elseif config.openNext then
-        for i, item in pairs(cont:getItems()) do
-          if item:isContainer() and (not config.freeContainers[1] or table.contains(config.freeContainers, item:getId())) then 
-            g_game.open(item, cont)
-            -- delay = now + exhausted
-            return
+clickDoor = macro(macroDelay, macroName, function()
+  for i, tile in ipairs(g_map.getTiles(posz())) do
+      local item = tile:getTopUseThing()
+      if item and table.find(doorId, item:getId()) then
+          local tPos = tile:getPosition()
+          local distance = getDistanceBetween(pos(), tPos)
+          if (distance <= useDistance) then
+              use(item)
+              return delay(useTime)
           end
-        end
-      end
-    end
-  end
 
-  -- no destination yet? should look on ground?
-  if not dest and config.reopen and config.freeContainers[1] then 
-    local tile = g_map.getTile(player:getPosition())
-    if tile then 
-      local things = tile:getThings()
-      for t, thing in pairs(things) do
-        if table.find(config.freeContainers,thing:getId()) then
-          delay = now + tonumber(config.moveDelay)
-          g_game.open(thing)
-          return
-        end
-      end
-    end
-  end
-  
-end)
-
--- main function
-macro(50, function()
-  if not config.enabled or delay > now or TargetBot.isActive() then return end
-  local exhausted = tonumber(config.moveDelay)
-
-  -- check capacity
-  if freecap() < tonumber(config.minCap) then return end
-
-  -- wait for destination
-  if not dest then return end
-
-  -- ok, lets check around
-  for x = -config.maxPos, config.maxPos do
-    for y = -config.maxPos, config.maxPos do
-      local pos = player:getPosition()
-      local tile = g_map.getTile({x = pos.x + x, y = pos.y + y, z = pos.z})
-      if tile and (x ~= 0 or y ~= 0) then
-        local things = tile:getThings()
-        for _, item in ipairs(things) do
-          if not item:isNotMoveable() and not item:isCreature() then
-            if table.find(config.freeItems, item:getId()) then
-              local cap = dest:getCapacity()
-              g_game.move(item,dest:getSlotPosition(cap),item:getCount())
-              -- dest is full (or almost), lets break and search for another one
-              if #dest:getItems() >= (cap-1) then dest = nil return end
-              -- Move One Item per time
-              delay = now + exhausted
-              if config.moveOne then return end
-            elseif table.find(config.freeContainers,item:getId()) then
-              -- this container should be in your feet ^.- just break and wait
-              delay = now + exhausted
-              return
-              --move trash?
-            elseif config.moveTrash and (math.abs(x) == 1 or math.abs(y) == 1) then
-              local trashTile = nil
-              local d = item:isStackable() and 4 or 2
-              for xp = -d,d do
-                for yp = -d,d do
-                  if math.abs(yp) > 1 or math.abs(xp) > 1 then
-                    trashTile = g_map.getTile({x = pos.x + xp, y = pos.y + yp, z = pos.z})
-                    if trashTile and not trashTile:isHouseTile() and trashTile:isWalkable() then
-                      local trashPos = trashTile:getPosition()
-                      local tilePos = tile:getPosition()
-                      if findPath(trashPos,tilePos, 7, { ignoreNonPathable = true, precision = 1 }) and g_map.isSightClear(tilePos,trashPos) then
-                        return g_game.move(item,trashPos,item:getCount())
-                      end
-                    end
-                  end
-                end
+          if (distance <= moveDist and distance > useDistance) then
+              if findPath(pos(), tPos, moveDist, { ignoreNonPathable = true, precision = 1 }) then
+                  autoWalk(tPos, moveTime, { ignoreNonPathable = true, precision = 1 })
+                  return delay(waitTime)
               end
-            end
           end
-        end
+      end
+  end
+end, tabName)
+
+-- Usar Item X Minutos 
+function comboScript(parent)
+  if not parent then
+    parent = panel
+  end
+local panelName = "comboScriptPanel"
+ 
+  local ui = setupUI([[
+ThreeRowsItems < Panel
+  height: 99
+  margin-top: 2
+  
+  BotItem
+    id: item1
+    anchors.top: parent.top
+    anchors.left: parent.left
+
+  BotItem
+    id: item2
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+
+  BotItem
+    id: item3
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+
+  BotItem
+    id: item4
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+
+  BotItem
+    id: item5
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item6
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 2
+
+  BotItem
+    id: item7
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item8
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item9
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item10
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item11
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 2
+    
+  BotItem
+    id: item12
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item13
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item14
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+    
+  BotItem
+    id: item15
+    anchors.top: prev.top
+    anchors.left: prev.right
+    margin-left: 2
+
+Panel
+  height: 70
+
+  SmallBotSwitch
+    id: title
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-align: center
+
+  HorizontalScrollBar
+    id: scroll1
+    anchors.left: title.left
+    anchors.right: title.right
+    anchors.top: title.bottom
+    margin-right: 2
+    margin-top: 2
+    minimum: 1
+    maximum: 60
+    step: 1
+
+  ThreeRowsItems
+    id: items
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom  
+  ]], parent)
+  ui:setId(panelName)
+ 
+  if not storage[panelName] then
+    storage[panelName] = {
+      time = 31
+    }
+  end
+ 
+  local updateText = function()
+    ui.title:setText("Usar Item Cada " .. storage[panelName].time .. " minutes")  
+  end
+ 
+  ui.scroll1.onValueChange = function(scroll, value)
+    storage[panelName].time = value
+    updateText()
+  end
+ 
+  ui.scroll1:setValue(storage[panelName].time)
+ 
+  ui.title:setOn(storage[panelName].enabled)
+  ui.title.onClick = function(widget)
+    storage[panelName].enabled = not storage[panelName].enabled
+    widget:setOn(storage[panelName].enabled)
+  end
+ 
+  if type(storage[panelName].items) ~= 'table' then
+    storage[panelName].items = { 11372, }
+  end
+ 
+  for i=1,15 do
+    ui.items:getChildByIndex(i).onItemChange = function(widget)
+      storage[panelName].items[i] = widget:getItemId()
+    end
+    ui.items:getChildByIndex(i):setItemId(storage[panelName].items[i])    
+  end
+ 
+  macro(1000, function()
+    if not storage[panelName].enabled then
+      return
+    end
+
+    if #storage[panelName].items > 0 then
+      timeOut = 5000
+      for _, itemToUse in pairs(storage[panelName].items) do
+        schedule(timeOut, function()
+          use(itemToUse)
+        end)
+        timeOut = timeOut + 500
       end
     end
-  end
-end)
+    schedule(timeOut + 5000, function()
+    end)
+    delay((storage[panelName].time * 60000) - 1000)
+  end)
+end
+comboScript(mainTab)
 
--- for compat
-local function getNear(pos)
-  if type(pos) ~= "table" then pos = pos:getPosition() end
+-- Alarmas
+local panelName = "alarmsAnen"
 
-  local tiles = {}
-  local dirs = {
-      {-1, 1}, {0, 1}, {1, 1}, {-1, 0}, {1, 0}, {-1, -1}, {0, -1}, {1, -1}
-  }
-  for i = 1, #dirs do
-      local tile = g_map.getTile({
-          x = pos.x - dirs[i][1],
-          y = pos.y - dirs[i][2],
-          z = pos.z
-      })
-      if tile then table.insert(tiles, tile) end
-  end
+local ui = setupUI([[
+Panel
+  height: 19
 
-  return tiles
+  BotSwitch
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-align: center
+    width: 130
+    !text: tr('Alarms +')
+
+  Button
+    id: alerts
+    anchors.top: prev.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    margin-left: 3
+    height: 17
+    text: Edit
+AlarmCheckBox < Panel
+  height: 20
+  margin-top: 2
+
+  CheckBox
+    id: tick
+    anchors.fill: parent
+    margin-top: 4
+    font: verdana-11px-rounded
+    text: Player Attack
+    text-offset: 17 -3
+
+AlarmCheckBoxAndSpinBox < Panel
+  height: 20
+  margin-top: 2
+
+  CheckBox
+    id: tick
+    anchors.fill: parent
+    margin-top: 4
+    font: verdana-11px-rounded
+    text: Player Attack
+    text-offset: 17 -3
+
+  SpinBox
+    id: value
+    anchors.top: parent.top
+    margin-top: 1
+    margin-bottom: 1
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 40
+    minimum: 0
+    maximum: 100
+    step: 1
+    editable: true
+    focusable: true
+
+AlarmCheckBoxAndTextEdit < Panel
+  height: 20
+  margin-top: 2
+
+  CheckBox
+    id: tick
+    anchors.fill: parent
+    anchors.right: next.left
+    margin-top: 4
+    font: verdana-11px-rounded
+    text: Creature Name
+    text-offset: 17 -3
+
+  BotTextEdit
+    id: text
+    anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    width: 150
+    font: terminus-10px
+    margin-top: 1
+    margin-bottom: 1
+
+AlarmsAnenWindow < MainWindow
+  !text: tr('[ANEN] Alarms +')
+  size: 600 550
+  padding: 15
+  @onEscape: self:hide()
+
+  FlatPanel
+    id: list
+    anchors.fill: parent
+    anchors.bottom: settingsList.top
+    margin-bottom: 20
+    margin-top: 10
+    layout: 
+      type: verticalBox
+      spacing: 2
+    padding: 10
+    padding-top: 5
+
+    Panel
+      id: section1
+      height: 140
+      layout:
+        type: grid
+        num-columns: 2
+        cell-size: 270 22
+        cell-spacing: 5
+  
+    HorizontalSeparator
+    Panel
+      id: section2
+      height: 80
+      layout:
+        type: grid
+        num-columns: 2
+        cell-size: 270 22
+        cell-spacing: 5
+  
+    HorizontalSeparator
+    Panel
+      id: section3
+      height: 80
+      layout:
+        type: grid
+        num-columns: 2
+        cell-size: 270 22
+        cell-spacing: 5
+
+  FlatPanel
+    id: settingsList
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: separator.top
+    margin-bottom: 5
+    margin-top: 10
+    padding: 5
+    padding-left: 10
+    layout: 
+      type: verticalBox
+      fit-children: true
+
+  Label
+    anchors.verticalCenter: settingsList.top
+    anchors.left: settingsList.left
+    margin-left: 5
+    width: 200
+    text: Alarms Settings
+    font: verdana-11px-rounded
+    color: #9f5031
+
+  Label
+    anchors.verticalCenter: list.top
+    anchors.left: list.left
+    margin-left: 5
+    width: 200
+    text: Active Alarms
+    font: verdana-11px-rounded
+    color: #9f5031
+
+  HorizontalSeparator
+    id: separator
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+
+  ResizeBorder
+    id: bottomResizeBorder
+    anchors.fill: separator
+    height: 3
+    minimum: 260
+    maximum: 600
+    margin-left: 3
+    margin-right: 3
+    background: #ffffff88  
+
+  Button
+    id: closeButton
+    !text: tr('Close')
+    font: cipsoftFont
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 45 21
+    margin-right: 5
+    @onClick: self:getParent():hide()
+    
+]])
+ui:setId(panelName)
+
+if not storage[panelName] then
+  storage[panelName] = {}
 end
 
--- auto move container on ground
-onPlayerPositionChange(function(newPos, oldPos)
-  if not config.enabled then return true end
-  dest = nil
-  if not config.moveBag then return true end
+local config = storage[panelName]
 
-  local max = config.maxPos
-  local tiles = getNear(newPos)
+ui.title:setOn(config.enabled)
+ui.title.onClick = function(widget)
+  config.enabled = not config.enabled
+  widget:setOn(config.enabled)
+end
 
-  for t, tile in pairs(tiles) do
-    if tile then
-      local items = tile:getItems()
-      for i, item in pairs(items) do
-        if table.find(config.freeContainers,item:getId()) then
-          g_game.move(item,newPos)
-          return true
-        end
-      end
+local window = UI.createWindow("AlarmsAnenWindow")
+window:hide()
+
+ui.alerts.onClick = function()
+  window:show()
+  window:raise()
+  window:focus()
+end
+
+local widgets = 
+{
+  "AlarmCheckBox", 
+  "AlarmCheckBoxAndSpinBox", 
+  "AlarmCheckBoxAndTextEdit"
+}
+
+local parents = 
+{
+  window.list, 
+  window.settingsList,
+  window.list.section1,
+  window.list.section2,
+  window.list.section3
+}
+
+
+-- type
+addAlarm = function(id, title, defaultValue, alarmType, parent, tooltip, delayAlarm)
+  local widget = UI.createWidget(widgets[alarmType], parents[parent])
+  widget:setId(id)
+  if type(config[id]) ~= 'table' then
+    config[id] = {}
+  end
+  config[id].delay = delayAlarm or nil
+  config[id].priority = config[id].priority or 3
+  widget.tick:setText(title)
+  widget.tick:setChecked(config[id].enabled)
+  widget.tick:setTooltip(tooltip)
+  widget.tick:removeAnchor(4)
+  widget.tick:setWidth(widget.tick:getTextSize().width + 20)
+  if parent ~= 2 then
+    local priority = UI.createWidget("ComboBox")
+    priority:addOption("Min", 1)
+    priority:addOption("Low", 2)
+    priority:addOption("Default", 3)
+    priority:addOption("High", 4)
+    priority:addOption("Max", 5)
+    priority:setWidth(70)
+    priority:setCurrentOptionByData(config[id].priority)
+    widget:addChild(priority)
+    priority:addAnchor(3, "parent", 3)
+    widget.tick:setMarginLeft(75)
+    if widget.text then
+      widget.text:setWidth(80)
+    end
+    priority.onOptionChange = function(widget, option, value)
+      config[id].priority = value
     end
   end
-end)
+  --  widget.tick.setOn(config[id].enabled)
+  widget.tick.onClick = function()
+    if id == "ignoreFriends" and not isFriend then
+      warn("To use this option you need 'Player Lists (vBot4.8)'. ")
+      widget.tick:setChecked(false)
+      return
+    end
+    config[id].enabled = not config[id].enabled
+    widget.tick:setChecked(config[id].enabled)
+  end
 
-local function activeDrag(icon, nameMacro, position)
-  icon:breakAnchors()
-  icon:move(position.posX or 20, position.posY or 20)
+  if alarmType > 1 and type(config[id].value) == 'nil' then
+    config[id].value = defaultValue
+  end
 
-  local dobleclick = false
-  icon.onDoubleClick = function()
-    dobleclick = true
-    schedule(1500, function()
-      dobleclick = false
+  if alarmType == 2 then
+    widget.value:setValue(config[id].value)
+    widget.value.onValueChange = function(widget, value)
+      config[id].value = value
+    end
+  elseif alarmType == 3 then
+    widget.text:setText(config[id].value)
+    widget.text.onTextChange = function(widget, newText)
+      config[id].value = newText
+    end
+  end
+  return widget
+end
+
+-- settings
+addAlarm("ignoreFriends", "Ignore Friends", true, 1, 2)
+addAlarm("ignoreParty", "Ignore Party Member", true, 1, 2)
+addAlarm("ignoreGuild", "Ignore Guild Member", true, 1, 2)
+addAlarm("flashClient", "Flash Client", true, 1, 2)
+addAlarm("doScreenshot", "Do Screenshot", true, 1, 2)
+
+-- alarm list
+addAlarm("damageTaken", "Damage Taken", false, 1, 3, nil, 30000)
+addAlarm("lowHealth", "Low Health", 20, 2, 3, nil, 20000)
+addAlarm("lowMana", "Low Mana", 20, 2, 3, nil, 20000)
+addAlarm("lowStamina", "Low Stamina", 39, 2, 3, "If the set value is less than or equal to your stamina, you will be notified", 600000)
+addAlarm("playerAttack", "Player Attack", false, 1, 3, nil, 15000)
+addAlarm("noParty", "No party", false, 1, 3, nil, 120000)
+addAlarm("noPartySharedExperience", "No party shared XP", false, 1, 3, nil, 180000)
+addAlarm("playerDead", "Player dead", false, 1, 3, nil, 180000)
+addAlarm("playerUpSkill", "Up Skill", false, 1, 3, nil, 1000)
+
+
+addAlarm("privateMsg", "Private Message", false, 1, 4)
+addAlarm("defaultMsg", "Default Message", false, 1, 4)
+addAlarm("customMessage", "Custom Message:", "", 3, 4, "You can add text, that if found in any incoming message will trigger alert.\n You can add many, just separate them by comma.")
+addAlarm("discordAlarm", "Discord Alarm:", "1234", 3, 4, "If checked, will send a message to Discord channel (put your ID here).", 10000)
+addAlarm("ntfyAlarm", "ntfy Alarm:", "", 3, 4, "If checked, will send a message to Discord channel (put your URL here).", 10000)
+
+-- UI.Separator(window.list)
+addAlarm("creatureDetected", "Creature Detected", false, 1, 5, nil, 50000)
+addAlarm("playerDetected", "Player Detected", false, 1, 5, nil, 50000)
+addAlarm("creatureName", "Creature Name:", "", 3, 5, "You can add a name or part of it, that if found in any visible creature name will trigger alert.\nYou can add many, just separate them by comma.", 50000)
+addAlarm("suppliesLow", "Supplies Low", "", 3, 5, "You can add list of item and quantity to sound the alarm(itemId, name item[optional], quantity)\nExample: 3130, 50, 3450, arrow, 100", 240000)
+
+
+local lastCallNotify = {}
+local function alarm(file, windowText, message, data, key)
+  if not lastCallNotify[key] then
+    lastCallNotify[key] = 0
+  end
+  if (now - lastCallNotify[key]) < (data.delay and data.delay or 2000 ) then return end
+  lastCallNotify[key] = now
+  if not g_resources.fileExists(file) then
+    file = "/sounds/alarm.ogg"
+  end
+
+  if modules.game_bot.g_app.getOs() == "windows" and config.flashClient.enabled then
+    g_window.flash()
+  end
+  g_window.setTitle(player:getName() .. " - " .. windowText)
+  playSound(file)
+
+  if not message then return end
+
+  if config.discordAlarm.enabled then
+    local info = {
+      user_id = config.discordAlarm.value,
+      message = message.message
+    }
+    HTTP.post('http://139.177.102.132:8001/api/mention', info, function(data, err)
+
     end)
   end
 
-  icon.onDragEnter = function(widget, mousePos)
-    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
-      return false
+  if config.ntfyAlarm.enabled then
+
+    local function sendInfo(delay)
+      delay = delay or 0
+      schedule(delay, function ()
+        local info = {
+          topic = config.ntfyAlarm.value,
+          message = message.message,
+          title = windowText,
+          tags = message.tags,
+          priority = data.priority or message.priority or 3,
+          -- actions = {
+--               { 
+--                 action = "view",
+--                 label = "Open Discord",
+--                 url = "https://discord.com/channels/1247624193332216011/1247624193776816308" 
+--               },
+--               { 
+--                 action = "http",
+--                 label =  "Turn off",
+--                 url = "http://139.177.102.132:8001/api/sendInfo",
+--                 body = "{\"temperature\": 65}"
+--                }
+--         }
+        }
+        
+        HTTP.post('https://ntfy.sh/', json.encode(info), function(data, err)
+    
+        end)
+      end)
     end
-    icon:breakAnchors()
-    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
-    dobleclick = false
-    return true
-  end
-
-  icon.onDragMove = function(widget, mousePos, moved)
-    local parentRect = widget:getParent():getRect()
-    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
-    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
-    widget:move(x, y)
-    icon.moving = { x = icon:getX(), y = icon:getY() }
-    return true
-  end
-
-  icon.onDragLeave = function(widget, pos)
-    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+    
+    if key == "playerDead" and config.doScreenshot.enabled then
+      doScreenshot()    
+      sendInfo(3000)  
+      return
+    end
+    sendInfo()
   end
 end
 
-local pickupIcon = addIcon("recoger" ,{item=2478, text="Pickup" , switchable=true},function(w, isOn)
- config.enabled = isOn
- ui.title:setOn(config.enabled)
+
+macro(5000, function()
+  if not config.enabled or not config.suppliesLow.enabled then return end
+  local rege = regexMatch(config.suppliesLow.value, "(\\d+),\\s*(\\d+)|(\\d+),\\s*([\\w\\s]*),\\s*(\\d+)") or {{}}
+  for key, value in ipairs(rege) do
+    local id = tonumber(value[2] ~= "" and value[2] or value[4])
+    local nameItem = value[5]
+    local count = tonumber(value[3] ~= "" and value[3] or value[6])
+    if not id or not count then goto continue end
+    if player:getItemsCount(id) < count then
+     alarm('/sounds/magnum.ogg', "Supplies Low!", {tags = {"warning"}, message = "Your character " .. player:getName() .. " has low supplies.\nName Item: " .. nameItem .."\nID: " .. id .. " Quantity: " .. count}, config.suppliesLow, "suppliesLow" .. id)
+    end
+    ::continue::
+  end
 end)
 
-pickupIcon.text:setFont('verdana-11px-rounded')
+-- damage taken & custom message
+onTextMessage(function(mode, text)
+  if not config.enabled then return end
+  if not player.isTimedSquareVisible and config.playerAttack.enabled then
+    if text:find('hitpoints due to an attack by') then
+     local playerName = text:match('You lose %d+ hitpoints due to an attack by (.+)%.')
+     local creature = getCreatureByName(playerName)
+     if creature and creature:isPlayer() then
+       if (not config.ignoreFriends.enabled or not isFriend) or (config.ignoreFriends.enabled and isFriend and not isFriend(playerName)) then 
+        if not config.ignoreGuild.enabled and not config.ignoreParty.enabled  then
+          return alarm("/sounds/Player_Attack.ogg", "Player Attack!", {tags = {"warning", "dagger"},priority = 5, message = "Your character " .. player:getName() .. " detected player attack: " .. creature:getName()}, config.playerAttack, "playerAttack")
+        end
+        if (config.ignoreGuild.enabled and not config.ignoreParty.enabled and creature:getEmblem() ~= 1) or (config.ignoreParty.enabled and not config.ignoreGuild.enabled and not creature:isPartyMember()) then
+          return alarm("/sounds/Player_Attack.ogg", "Player Attack!", {tags = {"warning", "dagger"},priority = 5, message = "Your character " .. player:getName() .. " detected player attack: " .. creature:getName()}, config.playerAttack, "playerAttack")
+        end
+      end 
+     end
+    end
+ end
 
-activeDrag(pickupIcon, 'pickup', storage.pickup or {})
+  if mode == 22 and config.damageTaken.enabled then
+    return alarm('/sounds/magnum.ogg', "Damage Received!", {tags = {"crossed_swords" , "warning"}, message = "Your character " .. player:getName() .. " received damage: " .. text}, config.damageTaken, "damageTaken")
+  end
 
--- cuenta jugadores en pantalla
-storage.showJugadorWidget = storage.showJugadorWidget or false
+  if config.customMessage.enabled then
+    local alertText = config.customMessage.value
+    if alertText:len() > 0 then
+      text = text:lower()
+      for _, parte in ipairs(string.splitrim and alertText:splitrim(",") or splitrim(alertText, ",")) do
+        if text:find(parte:lower()) then
+          return alarm('/sounds/magnum.ogg', "Special Message!",{tags = {"incoming_envelope"},message = "Your character " .. player:getName() .. " received custom message: " .. text}, config.customMessage, "customMessage")
+        end
+      end
+    end
+  end
 
-local widgetConfig = [[
-UIWidget
-  background-color: black
-  opacity: 0.8
-  padding: 0 5
+  if config.playerUpSkill.enabled then
+    if string.match(text, "You advanced from" or string.match(text, "You advanced in")) then
+      return alarm('/sounds/magnum.ogg', "Skill UP!",{tags = {"arrow_up", "clap"}, message = "Your character " .. player:getName() .. " advanced in skill: " .. text}, config.playerUpSkill, "playerUpSkill")
+    end
+  end
+end)
+
+-- default & private message
+onTalk(function(name, level, mode, text, channelId, pos)
+  if not config.enabled then return end
+  if name == player:getName() then return end -- ignore self messages
+
+  if config.ignoreFriends.enabled and isFriend and isFriend(name) then return end -- ignore friends if enabled
+
+  if mode == 1 and config.defaultMsg.enabled then
+    return alarm("/sounds/magnum.ogg", "Default Message!",{tags = {"inbox_tray"}, message = "Your character " .. player:getName() .. " received default message: " .. text}, config.privateMsg, "privateMsg")
+  end
+
+  if mode == 4 and config.privateMsg.enabled then
+    return alarm("/sounds/Private_Message.ogg", "Private Message!",{tags = {"inbox_tray"}, message = "Your character " .. player:getName() .. " received private message: " .. text}, config.privateMsg, "privateMsg")
+  end
+end)
+
+local function onStaminaSet(stamina)
+  local hours = math.floor(stamina / 60)
+  local minutes = stamina % 60
+  if minutes < 10 then
+      minutes = '0' .. minutes
+  end
+  return tr("You have %s hours and %s minutes left", hours, minutes), hours, minutes
+end
+
+local function getPartyShared()
+  if g_game.getLocalPlayer():getShield() == modules.gamelib.ShieldYellowSharedExp or
+      g_game.getLocalPlayer():getShield() == modules.gamelib.ShieldBlueSharedExp then
+      return true
+  end
+  return false
+end
+
+-- health & mana
+macro(100, function() 
+  
+  if not config.enabled then return end
+  if config.playerDead.enabled then
+    if modules.game_playerdeath.deathWindow then
+      modules.game_playerdeath.deathWindow:destroy()
+      modules.game_playerdeath.deathWindow = nil
+      return alarm("/sounds/alarm.ogg", "Player Death!",{tags = {"sob", "skull_and_crossbones"}, priority = 5, message = "Your character " .. player:getName() .. " is dead"}, config.playerDead, "playerDead")
+    end
+  end
+
+  if config.lowHealth.enabled then
+    if hppercent() < config.lowHealth.value then
+      return alarm("/sounds/Low_Health.ogg", "Low Health!",{tags = {"ghost"}, message = "Your character " .. player:getName() .. " has low health: " .. tostring(hppercent()) .. "%"}, config.lowHealth, "lowHealth")
+    end
+  end
+
+  if config.lowMana.enabled then
+    if manapercent() < config.lowMana.value then
+      return alarm("/sounds/Low_Mana.ogg", "Low Mana!", {tags = {"ghost"}, message = "Your character " .. player:getName() .. " has low mana: " .. tostring(manapercent()) .. "%"} , config.lowMana, "lowMana")
+    end
+  end
+
+  for i, spec in ipairs(getSpectators()) do
+    if not spec:isLocalPlayer() and not (config.ignoreFriends.enabled and isFriend and isFriend(spec)) then
+    
+      if config.creatureDetected.enabled then
+        return alarm("/sounds/magnum.ogg", "Creature Detected!", {tags = {"astonished"}, message = "Your character " .. player:getName() .. " detected creature: " .. spec:getName()} , config.creatureDetected, "creatureDetected")
+      end
+
+      if spec:isPlayer() then 
+        if spec.isTimedSquareVisible and spec:isTimedSquareVisible() and config.playerAttack.enabled then
+          if not config.ignoreGuild.enabled and not config.ignoreParty.enabled  then
+            return alarm("/sounds/Player_Attack.ogg", "Player Attack!", {tags = {"warning", "dagger"},priority = 5, message = "Your character " .. player:getName() .. " detected player attack: " .. spec:getName()}, config.playerAttack, "playerAttack")
+          end
+          if (config.ignoreGuild.enabled and not config.ignoreParty.enabled and spec:getEmblem() ~= 1) or (config.ignoreParty.enabled and not config.ignoreGuild.enabled and not spec:isPartyMember()) then
+            return alarm("/sounds/Player_Attack.ogg", "Player Attack!", {tags = {"warning", "dagger"},priority = 5, message = "Your character " .. player:getName() .. " detected player attack: " .. spec:getName()}, config.playerAttack, "playerAttack")
+          end
+        end
+        if config.playerDetected.enabled then
+          return alarm("/sounds/Player_Detected.ogg", "Player Detected!", {tags = {"warning", "eyes", "eyes"}, message = "Your character " .. player:getName() .. " detected player: " .. spec:getName()} , config.playerDetected, "playerDetected")
+        end
+      end
+
+      if config.creatureName.enabled then
+        local name = spec:getName():lower()
+        for _, value in ipairs(string.splitrim and config.creatureName.value:splitrim(",") or splitrim(config.creatureName.value, ",")) do
+          if name:find(value:lower()) then
+            return alarm("/sounds/alarm.ogg", "Special Creature Detected!",{tags = {"biohazard", "warning"},priority = 5 ,message = "Your character " .. player:getName() .. " detected special creature: " .. name}, config.creatureName, "creatureName")
+          end
+        end
+      end
+    end
+  end
+
+  if config.noParty.enabled then
+    if  not player:isPartyMember() then
+      return alarm("/sounds/alarm.ogg", "No party!", {priority = 4, message = "Your character " .. player:getName() .. " is not in a party!"}, config.noParty, "noParty")
+    end
+  end
+
+  if config.noPartySharedExperience.enabled then
+    if not getPartyShared() then
+      return alarm("/sounds/alarm.ogg", "No shared party experience!", {priority = 4, message = "Your character " .. player:getName() .. " has no shared party experience"}, config.noPartySharedExperience, "noPartySharedExperience")
+    end
+  end
+
+  if config.lowStamina.enabled then
+    if math.floor(player:getStamina() / 60) <= config.lowStamina.value then
+      return alarm("/sounds/alarm.ogg", "Low Stamina!", {tags = {"person_in_manual_wheelchair"}, priority = 4, message = "Your character " .. player:getName() .. " has low stamina: " .. onStaminaSet(player:getStamina())}, config.lowStamina, "lowStamina")
+    end
+  end
+end)
+
+-- Navegation viajar a citys
+SwitchAndButton = function(params, callbackSwitch, callbackButton, callback, parent)
+  --[[ params:
+    on - bool,
+    left - str,
+    right - str,
+    height - int,
+    maxWidth - int,
+  ]]
+
+  params = params or {}
+  params.on = params.on or false
+  params.left = params.left or ""
+  params.right = params.right or ""
+  params.height = params.height or 20
+  params.maxWidth = params.maxWidth or 88
+
+  local widget = UI.createWidget('SwitchAndButtonPanel', parent)
+
+  widget.left:setOn(params.on)
+  widget.left:setText(params.left)
+  widget.right:setText(params.right)
+  widget:setHeight(params.height)
+  if widget.right:getWidth() > params.maxWidth then
+    widget.right:setWidth(params.maxWidth)
+  end
+
+  widget.left.onClick = function()
+    params.on = not params.on
+    widget.left:setOn(params.on)
+    if callback then
+        callback(widget, params)
+    end
+    if callbackSwitch then
+        callbackSwitch()
+    else
+        warn("callback not set!")
+    end
+  end
+
+  widget.right.onClick = function()
+    if callbackButton then
+        callbackButton()
+    else
+        warn("callback not set!")
+    end
+  end
+
+  --[[ params:
+    if type(storage.test1) ~= "table" then
+        storage.test1 = storage.test1 or {on = false, left = "new script", right = "config"}
+    end
+    
+    UI.SwitchAndButton(storage.test1, test, test, function(widget, newParams)
+        storage.test1 = newParams 
+    end)
+  ]]
+  return widget
+end
+
+
+
+if not storage["travelAnen"] then
+  storage["travelAnen"] = {
+    enabled = false,
+    npcs = { },
+    autoTravel = false
+  }
+end
+
+local config = storage["travelAnen"]
+
+
+g_ui.loadUIFromString([[
+SwitchAndButtonPanel < Panel
+  height: 20
+  padding: 1
+
+  Button
+    id: right
+    anchors.top: parent.top
+    margin-top: 2
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-align: center
+
+  BotSwitch
+    id: left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: prev.left
+    margin-right: 3
+    text-align: center
+
+TextListEntryTravel < UIWidget
+  background-color: alpha
+  text-offset: 5 1
   focusable: true
-  phantom: false
-  draggable: true
-  text-auto-resize: true
-  color: white
-  text-align: left 
-]]
+  height: 16
+  font: verdana-11px-rounded
+  text-align: left
 
-storage.posicionWidgetJugadores = storage.posicionWidgetJugadores or {}
-local jugadoresWidget = {}
+  $focus:
+    background-color: #00000055
+  
+  Button
+    id: remove
+    anchors.right: parent.right
+    margin-right: 2
+    anchors.verticalCenter: parent.verticalCenter
+    size: 15 15
+    margin-right: 15
+    text: X
+    tooltip: Remove from the list
 
-local checkBoxJugadorWidget = setupUI([[
-CheckBox
-  id: checkBoxJugadorWidget
-  font: cipsoftFont
-  text: Show Player Widget
+travelAnenWindow < MainWindow
+  size: 400 400
+  $mobile:
+    size: 400 330
+  !text: tr('Lista De Navegacion')
+  @onEnter: self:hide()
+  @onEscape: self:hide()
+  padding: 25 8 8 8
+
+  Button
+    id: btnClose
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    text: Cerrar
+    width: 50
+    @onClick: self:getParent():hide()
+
+  UIWidget
+    text: List NPC
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-left: -40
+
+  TextList
+    id: listNPC
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: prev.horizontalCenter
+    anchors.bottom: btnClose.top
+    vertical-scrollbar: listScrollbarNPC
+    focusable: false
+    auto-focus: first
+    margin-top: 3
+    width: 125
+
+  VerticalScrollBar
+    id: listScrollbarNPC
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.right: prev.right
+    pixels-scroll: true
+    step: 5
+
+  UIWidget
+    text: List Citys
+    anchors.top: parent.top
+    anchors.left: prev.right
+    margin-left: 10
+
+  TextList
+    id: listCitys
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: prev.horizontalCenter
+    anchors.bottom: btnClose.top
+    vertical-scrollbar: listScrollbarCitys
+    focusable: false
+    auto-focus: first
+    margin-top: 3
+    margin-left: 35
+    width: 125
+
+  VerticalScrollBar
+    id: listScrollbarCitys
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.right: prev.right
+    pixels-scroll: true
+    step: 5
+
+  Panel
+    id: design
+    anchors.top: parent.top
+    anchors.left: prev.right
+    anchors.right: parent.right
+    anchors.bottom: btnClose.top
+    margin-left: 10
+    margin-right: 3
+    layout:
+      type: verticalBox
+      spacing: 5
 ]])
-checkBoxJugadorWidget:setChecked(storage.showJugadorWidget)
-checkBoxJugadorWidget.onCheckChange = function(widget, value)
-    storage.showJugadorWidget = value
-    if not value and jugadoresWidget["widget"] then
-        jugadoresWidget["widget"]:destroy()
-        jugadoresWidget["widget"] = nil
-    end
+
+
+local travelUI
+local function createTravelUI(numColumn)
+  local width = numColumn * 88 + 15
+  local size = tostring(width) .. " " .. tostring(math.max(100,math.ceil(width/3.7)))
+  travelUI = g_ui.getRootWidget():getChildById("travelUI")
+return travelUI or g_ui.loadUIFromString([[
+UIWindow
+  text: Navegar Hacia
+  anchors.horizontalCenter: parent.horizontalCenter
+  anchors.top: parent.top
+  margin-top: 30
+  background-color: black
+  id: travelUI
+  focusable: false
+  opacity: 0.85
+  size: ]] .. size .. [[ 
+  padding: 8
+  padding-top: 18
+
+  Panel
+    id: list
+    anchors.fill: parent
+    layout:
+      type: grid
+      cell-size: 80 20
+      cell-spacing: 8
+      num-columns: ]] .. numColumn .. [[
+]], g_ui.getRootWidget())
 end
 
-local function attachWidgetCallbacks(key)
-    local dobleclick = false
 
-    jugadoresWidget[key].onDragEnter = function(widget, mousePos)
-        if not modules.corelib.g_keyboard.isCtrlPressed() and not dobleclick then return false end
-        widget:breakAnchors()
-        widget.movingReference = { x = mousePos.x - widget:getX(), y = mousePos.y - widget:getY() }
-        return true
-    end
+local s = {}
+local parent = UI.createWindow("travelAnenWindow", g_ui.getRootWidget())
+parent:hide()
 
-    jugadoresWidget[key].onDragMove = function(widget, mousePos)
-        local parentRect = widget:getParent():getRect()
-        local x = math.min(math.max(parentRect.x, mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
-        local y = math.min(math.max(parentRect.y - widget:getParent():getMarginTop(), mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
-        widget:move(x, y)
-        modules.game_textmessage.displayGameMessage("Moviendo el widget a nueva posición.")
-        storage.posicionWidgetJugadores[key] = { x = x, y = y }
-        return true
+local conver
+local function conversation(callback, ...)
+    local expressions = {...}
+    local delay = 600
+    local talkDelay = 0
+    s.macroTraveling.setOn(false)
+    for i, expr in ipairs(expressions) do
+        schedule(talkDelay, function()
+             if expr ~= "hi" then
+               conver = callback
+             end
+             NPC.say(expr) 
+            end)
+        talkDelay = talkDelay + delay
     end
-
-    jugadoresWidget[key].onDragLeave = function(widget)
-        storage.posicionWidgetJugadores[key] = { x = widget:getX(), y = widget:getY() }
-        return true
-    end
-
-    jugadoresWidget[key].onDoubleClick = function()
-        dobleclick = true
-        schedule(2000, function()
-            dobleclick = false
-        end)
-    end
+    schedule(talkDelay + delay, function()
+        s.macroTraveling.setOn(s.switch.left:isOn())
+       conver = nil
+    end)
 end
 
-macro(600, "Contar jugadores", function(macro)
-    if not macro.isOn then
-        if jugadoresWidget["widget"] then
-            jugadoresWidget["widget"]:destroy()
-            jugadoresWidget["widget"] = nil
-        end
-        return
-    end
+onTalk(function(name, level, mode, text, channelId)
+  if conver then
+    conver(name, text)
+    return
+  end
+end)
 
-    if not storage.showJugadorWidget then
-        if jugadoresWidget["widget"] then
-            jugadoresWidget["widget"]:destroy()
-            jugadoresWidget["widget"] = nil
-        end
-        return
-    end
 
-    if not jugadoresWidget["widget"] then
-        jugadoresWidget["widget"] = setupUI(widgetConfig, g_ui.getRootWidget())
-        jugadoresWidget["widget"]:setPosition(storage.posicionWidgetJugadores["widget"] or { x = 590, y = 1 })
-        attachWidgetCallbacks("widget")
-    end
+local function travel(destination, callback)
+    return conversation(callback, "hi", destination, "yes", "yes")
+end
 
-    local cantidadJugadores = 0
-    for _, criatura in ipairs(getSpectators(player:getPosition().z)) do
-        if criatura:isPlayer() and criatura:getId() ~= player:getId() then
-            cantidadJugadores = cantidadJugadores + 1
+local function firstLetterCapital(texto)
+    if type(texto) ~= "string" then return texto end
+    return string.gsub(" "..texto, "%W%l", string.upper):sub(2)
+end
+
+
+local function createLabelAndEditEdit(label, idEditText, parent, tooltip)
+    local w = UI.createWidget('Label', parent)
+    w:setText(label)
+    w:setId(label)
+    w = UI.createWidget('TextEdit', parent)
+    w:setTooltip(tooltip)
+    w:setId(idEditText)
+    return w
+end
+
+local nameNPC = createLabelAndEditEdit("Name NPC", "namenpc", parent.design)
+local nameCity = createLabelAndEditEdit("Name City", "namecity", parent.design)
+
+
+local function refreshList(widget, data)
+    widget:destroyChildren()
+    for text, _ in pairs(data or {}) do
+        local w = UI.createWidget('TextListEntryTravel', widget)
+        w:setText(text)
+        w:setTooltip(text)
+        w:setId(text)
+        w.remove.onClick = function()
+            local npcFocus = parent.listNPC:getFocusedChild()
+            if widget:getId() == "listNPC" then
+              config.npcs[w:getId()] = nil
+              w:destroy()
+              parent.listCitys:destroyChildren()
+            else
+              config.npcs[npcFocus:getId()].citys[w:getId()] = nil
+              w:destroy()
+            end
+         
+
         end
     end
-    jugadoresWidget["widget"]:setText("Players En Pantalla: " .. cantidadJugadores)
+      widget:focusChild(nil) 
+      widget:focusChild(widget:getChildByIndex(1)) 
+end
+
+parent.listNPC.onChildFocusChange =  function(widget, newChild, oldChild)
+  if not newChild or not  config.npcs[newChild:getText()] then return end
+  refreshList(parent.listCitys, config.npcs[newChild:getText()].citys)
+  nameNPC:setText(newChild:getText())
+end
+
+refreshList(parent.listNPC, config.npcs)
+
+
+local function sortCitys(citys)
+  local temp = {}
+  local most = 0
+  for city, value in pairs(citys) do
+      table.insert(temp, city)
+  end
+  table.sort(temp)
+  return temp
+end
+
+local function getPopularOption(citys)
+  local city
+  local count = -1
+  for town, value in pairs(citys) do
+    if value > count then
+      city = town
+      count = value
+    end
+  end
+  return city
+end
+
+local okButton = UI.Button("Guardar", function()
+  local nameNPC = firstLetterCapital(nameNPC:getText():lower())
+  local nameCity = firstLetterCapital(nameCity:getText():lower())
+  
+  if nameNPC == "" or nameCity == "" then
+    return warn("Completa todos los campos")
+  end
+  
+  if not config.npcs[nameNPC] then
+    config.npcs[nameNPC] = {
+      citys = {}
+    }
+  end
+  config.npcs[nameNPC].citys[nameCity] = config.npcs[nameNPC].citys[nameCity] or 0
+  refreshList(parent.listNPC, config.npcs)
+end, parent.design)
+
+local autoTravel = g_ui.createWidget("CheckBox", parent.design)
+autoTravel:setText("Auto Navegar")
+autoTravel:setTooltip("viajara automaticamente a la ciudad que visites mas con X npc")
+autoTravel:setChecked(config.autoTravel)
+autoTravel.onCheckChange = function(w, isOn)
+    config.autoTravel = isOn
+end
+
+
+s.macroTraveling = macro(100, function(macro)
+  local creatures = g_map.getSpectatorsInRange(pos(), false, 2, 2)
+  local npc
+  local citys
+  for _, creature in ipairs(creatures) do
+    local towns = config.npcs[creature:getName()]
+    if creature:isNpc() and towns then
+      npc = creature:getName()
+      citys = towns.citys
+      break
+    end
+  end
+  
+  if npc and citys and not travelUI then
+    
+    local sortList = sortCitys(citys)
+    if #sortList == 0 then return end
+    travelUI = createTravelUI(math.ceil(#sortList / 3))
+    if config.autoTravel then
+      local popular = getPopularOption(citys)
+      schedule(3200, function()
+        if config.enabled and travelUI and (s.actualPos and getDistanceBetween(s.actualPos, pos()) <= 6) then
+          s.actualPos = nil
+         travel(popular)
+        end
+      end)
+      warn("Viajando a " .. popular .. " en 3 segundos...")
+    end
+    
+      for _, city in ipairs(sortList) do
+        local button = g_ui.createWidget("Button")
+        button:setText(city)
+        button.onClick = function(widget)
+            local reference = config.npcs[npc]
+            macro.setOn(false)
+            s.actualPos = pos()
+            travel(widget:getText())
+            config.npcs[npc].citys[widget:getText()] = reference.citys[widget:getText()] + 1
+            travelUI:destroy()
+            travelUI = nil
+            schedule(5000, function()
+                macro.setOn(config.enabled)
+            end)
+        end
+       
+       travelUI.list:addChild(button)
+      end
+      travelUI:show()
+      travelUI:focus()
+  elseif not npc and travelUI then
+      travelUI:destroy()
+      travelUI = nil
+  end
+  
+end)
+s.macroTraveling.setOn(config.enabled)
+
+s.switch = SwitchAndButton({on = config.enabled, left = "Navegacion", right = "Setup"}, function()
+    config.enabled = not config.enabled
+    s.macroTraveling.setOn(config.enabled)
+    if not config.enabled and travelUI then
+      travelUI:destroy()
+      travelUI = nil
+    end
+end, function()
+  parent:show()
+  parent:focus()
+  parent:raise()
+end)
+
+UI.Button("Obtener Ciudades", function()
+  creatures = g_map.getSpectatorsInRange(pos(), false, 2, 2)
+  for _, creature in ipairs(creatures) do
+    if creature:isNpc() then
+      return conversation(function(name, text)
+        text = text:lower()
+        if name ~= creature:getName() then return end
+        if not config.npcs[name] then
+          config.npcs[name] = {citys = {}}
+        end
+        local ok = false
+        for ciudad in text:gmatch("{([%a%s]+)}") do
+          if not table.find({"sail", "travel"}, ciudad) then
+            config.npcs[name].citys[ciudad] = config.npcs[name].citys[ciudad] or 0
+            ok = true
+          end
+        end
+        
+        if not ok then
+            local options = {"to%sgo%s-%s", "go%?%sto"}
+            local pos 
+            for index, value in ipairs(options) do
+              pos = {text:find(value)}
+              if not table.empty(pos) then
+                break
+              end
+            end
+
+            if table.empty(pos) then return end
+            ok = true
+            text = text:sub(pos[2] + 1)
+            text = text:gsub("%f[%w]and%f[%W]", ",")
+            text = text:gsub("%f[%w]or%f[%W]", ",")
+            for ciudad in string.gmatch(text, "([%w%s']+)") do
+              config.npcs[name].citys[firstLetterCapital(ciudad:trim())] = config.npcs[name].citys[ciudad:trim()] or 0
+            end
+        end
+
+        refreshList(parent.listNPC, config.npcs)
+        end, "hi", "travel", "sail")
+    end
+  end
+  warn("no hay npc cerca de ti")
+end)
+
+-- Recarga Configuraciones bot
+modules.game_textmessage.displayGameMessage("Bot Cargado")
+addButton("reloadid", "Recargar Bot", function() 
+    reload()
 end)
