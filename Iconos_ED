@@ -200,55 +200,6 @@ pushiIcon.text:setFont('verdana-11px-rounded')
 
 activeDrag(pushiIcon, 'pushi', storage.pushi or {})
 
--- UE Exevo Gran Mas Frigo 
-local uenox = macro(1000,function()
-say("exevo gran mas frigo") 
-end)
-
-local function activeDrag(icon, nameMacro, position)
-  icon:breakAnchors()
-  icon:move(position.posX or 20, position.posY or 20)
-
-  local dobleclick = false
-  icon.onDoubleClick = function()
-    dobleclick = true
-    schedule(1500, function()
-      dobleclick = false
-    end)
-  end
-
-  icon.onDragEnter = function(widget, mousePos)
-    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
-      return false
-    end
-    icon:breakAnchors()
-    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
-    dobleclick = false
-    return true
-  end
-
-  icon.onDragMove = function(widget, mousePos, moved)
-    local parentRect = widget:getParent():getRect()
-    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
-    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
-    widget:move(x, y)
-    icon.moving = { x = icon:getX(), y = icon:getY() }
-    return true
-  end
-
-  icon.onDragLeave = function(widget, pos)
-    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
-  end
-end
-
-local uenoxIcon = addIcon("uenox", {item = 8079, text = "UE", switchable = true, moveable = true}, function(icon, isOn)
-  uenox.setOn(isOn)
-end)
-
-uenoxIcon.text:setFont('verdana-11px-rounded')
-
-activeDrag(uenoxIcon, 'uenox', storage.uenox or {})
-
 -- Avalanche
 local aoe = macro(400,function()
     if g_game.isAttacking() then
@@ -530,60 +481,6 @@ end)
 fuegoIcon.text:setFont('verdana-11px-rounded')
 
 activeDrag(fuegoIcon, 'fuego', storage.fuego or {})
-
--- Mana
-local manaId = 238
-local manaPercent = 90
-
-local mananox = macro(50,function()
-  if (manapercent() <= manaPercent) then
-    usewith(manaId, player) 
-  end
-end)
-
-local function activeDrag(icon, nameMacro, position)
-  icon:breakAnchors()
-  icon:move(position.posX or 20, position.posY or 20)
-
-  local dobleclick = false
-  icon.onDoubleClick = function()
-    dobleclick = true
-    schedule(1500, function()
-      dobleclick = false
-    end)
-  end
-
-  icon.onDragEnter = function(widget, mousePos)
-    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
-      return false
-    end
-    icon:breakAnchors()
-    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
-    dobleclick = false
-    return true
-  end
-
-  icon.onDragMove = function(widget, mousePos, moved)
-    local parentRect = widget:getParent():getRect()
-    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
-    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
-    widget:move(x, y)
-    icon.moving = { x = icon:getX(), y = icon:getY() }
-    return true
-  end
-
-  icon.onDragLeave = function(widget, pos)
-    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
-  end
-end
-
-local mananoxIcon = addIcon("mananox", {item = 238, text = "Mana", switchable = true, moveable = true}, function(icon, isOn)
-  mananox.setOn(isOn)
-end)
-
-mananoxIcon.text:setFont('verdana-11px-rounded')
-
-activeDrag(mananoxIcon, 'mananox', storage.mananox or {})
 
 -- HoldMw
 local hold = 0
