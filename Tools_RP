@@ -1504,7 +1504,7 @@ end)
 
 -- Multispell
 local distance = 4
-local amountOfMonsters = 3
+local amountOfMonsters = 2
 
 local multispellrp = macro(1200, function()
    local specAmount = 0
