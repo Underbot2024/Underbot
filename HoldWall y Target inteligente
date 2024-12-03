@@ -1,0 +1,242 @@
+-- HoldMw
+local hold = 0
+local candidates = {}
+local shouldHold = false
+
+-- Constants for item IDs
+local HOLD_MW_RUNE = 3180
+local HOLD_WG_RUNE = 3156
+local HOLD_ITEM_ID = 2128
+
+-- Function to get the rune ID based on the tile text
+local function getRuneByText(text)
+  if text == "HOLD MW" then
+    return HOLD_MW_RUNE
+  elseif text == "HOLD WG" then
+    return HOLD_WG_RUNE
+  end
+  return nil
+end
+
+local holdMwIcon = macro(1000, function(m)
+  shouldHold = true
+  schedule(500, function()
+    if m.isOn() then return end
+    shouldHold = false
+    candidates = {}
+    for _, t in ipairs(g_map.getTiles(posz())) do
+      t:setText("")
+    end
+  end)
+end)
+
+local m = macro(1000, function()
+  if #candidates == 0 then return end
+  for i = #candidates, 1, -1 do
+    local pos = candidates[i]
+    local tile = g_map.getTile(pos)
+    if tile then
+      if tile:getText():len() == 0 then 
+        table.remove(candidates, i)
+      else
+        local rune = getRuneByText(tile:getText())
+        if tile:canShoot() and not isInPz() and tile:isWalkable() and tile:getTopUseThing():getId() ~= 2130 then
+          if math.abs(player:getPosition().x - tile:getPosition().x) < 8 and math.abs(player:getPosition().y - tile:getPosition().y) < 6 then
+            rune = findItem(rune)            
+            return useWith(rune, tile:getTopUseThing())
+          end
+        end
+      end
+    end
+  end
+end)
+
+onRemoveThing(function(tile, thing)  
+  if thing:getId() ~= HOLD_ITEM_ID then return end
+  if tile:getText():find("HOLD") then
+    table.insert(candidates, tile:getPosition())
+    local rune = getRuneByText(tile:getText())
+    if math.abs(player:getPosition().x - tile:getPosition().x) < 8 and math.abs(player:getPosition().y - tile:getPosition().y) < 6 then
+      rune = findItem(rune)  
+      return useWith(rune, tile:getTopUseThing())
+    end
+  end
+end)
+
+onAddThing(function(tile, thing)  
+  if m.isOff() then return end
+  if thing:getId() ~= HOLD_ITEM_ID then return end
+  if tile:getText():len() > 0 then
+    table.remove(candidates, table.find(candidates, tile))
+  end
+end)
+
+onUseWith(function(pos, itemId, target, subType)
+  if not shouldHold or (itemId ~= HOLD_MW_RUNE and itemId ~= HOLD_WG_RUNE) then return end
+  
+  hold = now    
+  local tile = g_map.getTile(target:getPosition())
+  if not tile then return end
+
+  if itemId == HOLD_MW_RUNE then
+    tile:setText("HOLD MW")
+  else
+    tile:setText("HOLD WG")
+  end
+  table.insert(candidates, tile:getPosition()) 
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0, mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0, mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local holdMwIcon = addIcon("holdMw", { item = HOLD_ITEM_ID, text = "HoldMw", switchable = true, moveable = true }, function(icon, isOn)
+  holdMwIcon.setOn(isOn)
+end)
+
+holdMwIcon.text:setFont('verdana-11px-rounded')
+
+activeDrag(holdMwIcon, 'holdMw', storage.holdMw or {})
+
+-- Target Inteligente
+local targeting = macro(1000, "Target Inteligente", function()
+    if isInPz() then
+        targetMonster = nil
+        return
+    end
+
+    local playerPos = player:getPosition()
+
+
+    local battlelist = getSpectators()
+
+    local ignoreSet = {}
+    local ignoreText = storage.Mobs or ""
+    local monsterNames = string.split(ignoreText, ",")
+
+    for _, name in ipairs(monsterNames) do
+        ignoreSet[name:trim()] = true
+    end
+
+    local currentTarget = g_game.getAttackingCreature()
+    local targetMonster = nil
+    local closestDistance = tonumber(storage.Range)
+    local lowestHealthPercent = 101
+
+    local validTargets = {}
+
+    for _, val in pairs(battlelist) do
+        if val:isMonster() and not ignoreSet[val:getName()] then
+            local distance = getDistanceBetween(playerPos, val:getPosition())
+            if distance <= closestDistance and val:canShoot(closestDistance) then
+                table.insert(validTargets, val)
+            end
+        end
+    end
+
+
+    for _, val in ipairs(validTargets) do
+        local healthPercent = val:getHealthPercent()
+        if healthPercent < lowestHealthPercent or currentTarget == val then
+            lowestHealthPercent = healthPercent
+            targetMonster = val
+        end
+    end
+
+
+    if targetMonster and currentTarget ~= targetMonster then
+        g_game.attack(targetMonster)
+    end
+end)
+
+local function activeDrag(icon, nameMacro, position)
+  icon:breakAnchors()
+  icon:move(position.posX or 20, position.posY or 20)
+
+  local dobleclick = false
+  icon.onDoubleClick = function()
+    dobleclick = true
+    schedule(1500, function()
+      dobleclick = false
+    end)
+  end
+
+  icon.onDragEnter = function(widget, mousePos)
+    if not dobleclick and not g_keyboard.isKeyPressed("F1") then
+      return false
+    end
+    icon:breakAnchors()
+    icon.movingReference = { x = mousePos.x - icon:getX(), y = mousePos.y - icon:getY() }
+    dobleclick = false
+    return true
+  end
+
+  icon.onDragMove = function(widget, mousePos, moved)
+    local parentRect = widget:getParent():getRect()
+    local x = math.min(math.max(0,mousePos.x - widget.movingReference.x), parentRect.x + parentRect.width - widget:getWidth())
+    local y = math.min(math.max(0,mousePos.y - widget.movingReference.y), parentRect.y + parentRect.height - widget:getHeight())
+    widget:move(x, y)
+    icon.moving = { x = icon:getX(), y = icon:getY() }
+    return true
+  end
+
+  icon.onDragLeave = function(widget, pos)
+    storage[nameMacro] = { posX = icon.moving.x, posY = icon.moving.y }
+  end
+end
+
+local targeting = addIcon("targeting", {item = 10800, text = "Attack", switchable = true, moveable = true}, function(icon, isOn)
+targeting.setOn(isOn)
+end)
+
+targeting.text:setFont('verdana-11px-rounded')
+
+activeDrag(targeting, 'targeting', storage.targeting or {})
+
+UI.Label("Monster a Ignorar")
+UI.TextEdit(storage.Mobs or "monster1, monster2, monster3", function(widget, text)
+    storage.Mobs = text
+end)
+
+UI.Label("Distancia Maxima a Revisar")
+UI.TextEdit(storage.Range or "10", function(widget, text)
+    local range = tonumber(text)
+    if range then
+        storage.Range = range
+    else
+        modules.game_textmessage.displayGameMessage("[Error] Ingrese un numero valido para la distancia maxima.")
+    end
+end)
+UI.Separator()
