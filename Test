@@ -1,0 +1,32 @@
+local allowedNames = {
+  "name1",
+  "name2",
+  "name3",
+}
+
+if not table.find(allowedNames, name(), true) then
+    --Made By VivoDibra
+  return modules.game_textwindow.onGameEditText(0, 6279, 10000, name() ..", you are not allowed to use this macro.", "Scripter Name", "")
+end
+
+modules.game_textmessage.displayGameMessage("Protected Script Loaded.")
+
+macro(100, "Protected Dance", function()
+  local delay = 0
+  for i=0,3 do
+      schedule(delay, function() 
+          player:setDirection(i)
+      end)
+      delay = delay + 20
+  end
+end)
+
+macro(1000, "Autoacepta Party",function() 
+  if player:getShield() > 2 then return end -- already in a party
+  for s, spec in pairs(getSpectators(false)) do
+    if spec:getShield() == 1 then
+      g_game.partyJoin(spec:getId())
+      delay(1000)
+    end
+  end
+end)
