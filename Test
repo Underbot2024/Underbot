@@ -6,10 +6,10 @@ local allowedNames = {
 
 if not table.find(allowedNames, name(), true) then
     --Made By VivoDibra
-  return modules.game_textwindow.onGameEditText(0, 6279, 10000, name() ..", you are not allowed to use this macro.", "Scripter Name", "")
+  return modules.game_textwindow.onGameEditText(0, 6279, 10000, name() ..", tu no tienes permitido usar estos scripts.", "Scripts Underbot", "")
 end
 
-modules.game_textmessage.displayGameMessage("Protected Script Loaded.")
+modules.game_textmessage.displayGameMessage("Scripts Protegidos Cargados.")
 
 macro(100, "Protected Dance", function()
   local delay = 0
